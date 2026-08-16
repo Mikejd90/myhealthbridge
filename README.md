@@ -68,3 +68,40 @@ Built using the official NHS.UK Frontend Framework, the app offers a clear, acce
 > * **Not a Medical Device:** MyHealthBridge is a non-clinical prototype tool built solely for demonstration, portfolio showcase, and personal tracking assistance. It is **not** a certified medical device and does **not** provide medical diagnosis, clinical evaluation, or official treatment advice.
 > * **Emergency Situations:** In the event of a medical emergency, do not rely on this application. Contact emergency services immediately — **999** (UK), **911** (US), or **112** (EU).
 > * **Consult a Healthcare Professional:** Always seek the advice of a GP, physician, or qualified healthcare provider regarding any health condition or treatment plan. Never disregard or delay seeking professional medical advice because of information logged or calculated within this application.
+
+## Repository Policy & Contributions
+
+This repository exists strictly as a **personal portfolio showcase**. 
+
+* **No External Contributions:** Pull requests, issues, and feature requests from outside contributors are not currently accepted.
+* **Ownership:** All maintenance, updates, and code pushes are managed exclusively by the author ([@mikejd90](https://github.com/mikejd90)).
+* **Usage:** You are free to view, fork, or study the code under the terms of the MIT License below, but changes to this main repository remain strictly locked to the owner.
+
+---
+
+## License
+
+This project is licensed under the **MIT License** — feel free to inspect or learn from the codebase for personal or educational purposes.
+
+```text
+MIT License
+
+Copyright (c) 2026 MyHealthBridge
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
