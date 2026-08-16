@@ -1,8 +1,8 @@
-# myhealthbridge
-**MyHealthBridge** is a lightweight, privacy-focused web application designed to help patients track daily health metrics at home and seamlessly share structured reports with their GP surgery or healthcare providers
-# MyHealthBridge - Patient Health Diary
+# MyHealthBridge
 
-https://mikejd90.github.io/myhealthbridge/
+**MyHealthBridge** is a lightweight, privacy-focused web application designed to help patients track daily health metrics at home and seamlessly share structured reports with their GP surgery or healthcare providers.
+
+[**Live Demo »**](https://mikejd90.github.io/myhealthbridge/)
 
 Built using the official **NHS.UK Frontend Framework**, the app offers a clear, accessible, and intuitive interface that aligns with UK healthcare design standards.
 
@@ -16,7 +16,7 @@ Built using the official **NHS.UK Frontend Framework**, the app offers a clear, 
   * **Weight Tracker:** Logs body weight in kilograms with real-time automatic conversion to Stones & Pounds.
 
 * **Flexible Export Options for GP Practice Submission:**
-  * **PDF Report Generation:** Downloads a formatted multi-page PDF summary complete with visual trend charts and chronological history logs.
+  * **Customizable PDF Report Generation:** Downloads a clean, GP-ready PDF summary with patient metadata and chronological history logs. Optionally excludes visual charts for streamlined text-only reports.
   * **Active Mode CSV:** Export single-category readings directly to spreadsheet format.
   * **Combined CSV Export:** Downloads all historical logs across BP, Peak Flow, and Weight into a single unified report.
   * **Copy Plain Text:** One-click copy formatted text directly into online practice consultation portals (e.g., eConsult, Accurx, Patchs).
@@ -39,6 +39,14 @@ Built using the official **NHS.UK Frontend Framework**, the app offers a clear, 
 ---
 
 ## Version History
+
+### **v1.3.0**
+* **PDF Export Optimization:**
+  * Updated PDF generation logic to export text BP readings, summaries, and patient metadata without graph graphics.
+  * Temporarily hides canvas chart wrappers during capture to ensure clean, clutter-free printable reports.
+* **UI & Quality of Life Improvements:**
+  * Enhanced field validation and timestamp resets on form submissions.
+  * Improved responsive rendering on mobile viewports for health data tables.
 
 ### **v1.2.0**
 * Added **Export All Data (Combined CSV)** feature allowing export of all logged health streams in one structured CSV file.
