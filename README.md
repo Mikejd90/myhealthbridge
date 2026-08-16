@@ -79,29 +79,10 @@ This repository exists strictly as a **personal portfolio showcase**.
 
 ---
 
-## License
+## License & Terms of Use
 
-This project is licensed under the **MIT License** — feel free to inspect or learn from the codebase for personal or educational purposes.
+Demonstration and Portfolio Use Only
+Copyright (c) 2026. This project is shared strictly for portfolio display, technical demonstration, and evaluation purposes.
 
-```text
-MIT License
-
-Copyright (c) 2026 MyHealthBridge
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+No Production Warranty: This software is provided "as is", without warranty of any kind, express or implied.
+Data Restriction: This repository contains synthetic dummy data only. Unauthorized use with live NHS patient data or real staff PII is strictly prohibited.
