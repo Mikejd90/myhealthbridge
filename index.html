@@ -1,600 +1,775 @@
 <!DOCTYPE html>
-<html lang="en" class="govuk-template">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MyHealthBridge - Patient Health Diary</title>
-  
-  <!-- NHS.UK Frontend Framework CSS -->
+  <!-- NHS.UK Frontend CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nhsuk-frontend@9.2.0/dist/nhsuk-9.2.0.min.css">
-  
-  <!-- Chart.js and html2pdf.js Dependencies -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Chart.js for graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- html2pdf for patient PDF download -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
   <style>
-    body {
-      background-color: #f0f4f5;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    .app-container {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 20px 15px;
-    }
-    .card {
-      background: #ffffff;
-      border-radius: 4px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border-top: 4px solid #005ea5;
-    }
-    .metric-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #ccc;
-      padding-bottom: 8px;
-    }
-    .metric-tab {
-      padding: 10px 16px;
-      background: #e5edd8;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      border-radius: 4px 4px 0 0;
-      color: #005ea5;
-    }
-    .metric-tab.active {
-      background: #005ea5;
-      color: #ffffff;
-    }
-    .chart-box {
-      background: #ffffff;
-      padding: 15px;
-      border: 1px solid #d8dde0;
-      border-radius: 4px;
-      margin-top: 20px;
+    .chart-container { position: relative; height: 260px; width: 100%; margin-top: 15px; margin-bottom: 25px; }
+    .hidden { display: none; }
+    .nhsuk-card--welcome { background-color: #f0f4f5; border-left: 8px solid #005ea5; }
+    .badge-nice { background: #d8edf8; color: #005ea5; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+    .history-table-container { overflow-x: auto; margin-top: 20px; }
+    #chart-img-print { display: none; max-width: 100%; height: auto; }
+
+    /* Page Break for PDF Export */
+    .pdf-page-break {
+      page-break-before: always;
+      break-before: page;
+      padding-top: 15px;
     }
 
-    /* iOS Safari PDF Page Break & Canvas Sizing Fixes */
-    .pdf-page-break {
-      page-break-before: always !important;
-      break-before: page !important;
-      display: block !important;
-      clear: both !important;
-      margin-top: 0 !important;
-      padding-top: 20px !important;
+    .patient-details-box {
+      background-color: #f8f9fa;
+      border: 1px solid #d8ede0;
+      border-left: 4px solid #007f3b;
+      padding: 12px 16px;
+      margin-bottom: 20px;
     }
-    .pdf-chart-container {
-      width: 100% !important;
-      max-width: 700px !important;
-      height: 380px !important;
-      position: relative !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-      margin: 0 auto;
+
+    /* Print/PDF Hide Utilities */
+    .btn-delete-row {
+      color: #d4351c;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: 0.9rem;
     }
-    .hidden {
-      display: none !important;
+    .btn-delete-row:hover {
+      color: #942514;
     }
   </style>
 </head>
-<body>
+<body class="nhsuk-body">
 
+  <!-- Header -->
   <header class="nhsuk-header" role="banner">
     <div class="nhsuk-width-container nhsuk-header__container">
-      <div class="nhsuk-header__logo">
-        <a class="nhsuk-header__link" href="#" aria-label="MyHealthBridge homepage">
-          <svg class="nhsuk-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 16" height="32" width="80">
-            <path fill="#fff" d="M0 0h40v16H0z"></path>
-            <path fill="#005ea5" d="M3.9 1.5h4.4l2.6 9h.1l2.7-9h4.2v13h-3V5.1h-.1l-3.1 9.4H9.1L6 5.1h-.1v9.4H3.9zM19.7 1.5h3v4.5h4.9V1.5h3v13h-3V8.8h-4.9v5.7h-3zM32.8 1.5h3v13h-3z"></path>
-          </svg>
-          <span style="color: white; font-size: 22px; font-weight: bold; margin-left: 10px; vertical-align: middle;">MyHealthBridge</span>
-        </a>
+      <div class="nhsuk-header__content" style="padding-left: 0;">
+        <span class="nhsuk-header__service-name"><a href="#" style="color: white; text-decoration: none; font-weight: bold;">MyHealthBridge</a> - Patient Health Diary</span>
       </div>
     </div>
   </header>
 
-  <main class="app-container">
-    
-    <!-- Patient Details Section -->
-    <div class="card">
-      <h2 class="nhsuk-heading-m">Patient Details</h2>
-      <div class="nhsuk-grid-row">
-        <div class="nhsuk-grid-column-one-third">
-          <div class="nhsuk-form-group">
-            <label class="nhsuk-label" for="patientName">Full Name</label>
-            <input class="nhsuk-input" id="patientName" type="text" oninput="savePatientDetails()">
+  <main class="nhsuk-width-container nhsuk-main-wrapper" id="maincontent" role="main">
+    <div class="nhsuk-grid-row">
+      <div class="nhsuk-grid-column-two-thirds">
+
+        <!-- Welcome Panel -->
+        <div class="nhsuk-card nhsuk-card--welcome nhsuk-u-margin-bottom-6">
+          <div class="nhsuk-card__content">
+            <h1 class="nhsuk-heading-l nhsuk-u-margin-bottom-2">Welcome to Your Health Diary</h1>
+            <p class="nhsuk-body">Tracking your health at home helps your GP practice give you the best possible care. Log your daily readings here and send your summary directly to your surgery when requested.</p>
           </div>
         </div>
-        <div class="nhsuk-grid-column-one-third">
-          <div class="nhsuk-form-group">
-            <label class="nhsuk-label" for="patientDOB">Date of Birth</label>
-            <input class="nhsuk-input" id="patientDOB" type="date" oninput="savePatientDetails()">
+
+        <!-- Patient Info Section -->
+        <div class="nhsuk-card nhsuk-u-margin-bottom-6">
+          <div class="nhsuk-card__content">
+            <h2 class="nhsuk-card__heading nhsuk-heading-m">Patient Details (Optional)</h2>
+            <p class="nhsuk-body-s">Entering these details ensures your GP practice can easily identify your report when submitted.</p>
+            
+            <div class="nhsuk-form-group">
+              <label class="nhsuk-label" for="patient-name">Full Name</label>
+              <input class="nhsuk-input nhsuk-input--width-20" id="patient-name" type="text" placeholder="e.g. Jane Doe" oninput="savePatientDetails()">
+            </div>
+
+            <div class="nhsuk-form-group">
+              <label class="nhsuk-label" for="patient-dob">Date of Birth</label>
+              <input class="nhsuk-input nhsuk-input--width-10" id="patient-dob" type="date" onchange="savePatientDetails()">
+            </div>
+
+            <div class="nhsuk-form-group">
+              <label class="nhsuk-label" for="patient-nhs">NHS Number (10 digits)</label>
+              <div class="nhsuk-hint">e.g. 485 777 3456</div>
+              <input class="nhsuk-input nhsuk-input--width-10" id="patient-nhs" type="text" maxlength="12" placeholder="485 777 3456" oninput="savePatientDetails()">
+            </div>
           </div>
         </div>
-        <div class="nhsuk-grid-column-one-third">
-          <div class="nhsuk-form-group">
-            <label class="nhsuk-label" for="nhsNumber">NHS Number</label>
-            <input class="nhsuk-input" id="nhsNumber" type="text" placeholder="e.g. 123 456 7890" oninput="savePatientDetails()">
+
+        <!-- Mode Toggle -->
+        <div class="nhsuk-form-group">
+          <label class="nhsuk-label" for="tracker-mode"><strong>What are you tracking today?</strong></label>
+          <select class="nhsuk-select" id="tracker-mode" onchange="toggleMode()">
+            <option value="bp">Blood Pressure (7-Day Diary)</option>
+            <option value="asthma">Asthma Peak Flow Diary</option>
+            <option value="weight">Weight Tracker (kg & Stone/lbs)</option>
+          </select>
+        </div>
+
+        <!-- Entry Form -->
+        <div class="nhsuk-card nhsuk-u-margin-bottom-6">
+          <div class="nhsuk-card__content">
+            <h2 class="nhsuk-card__heading nhsuk-heading-m" id="form-heading">Add Today's Blood Pressure</h2>
+
+            <form id="tracker-form" onsubmit="addReading(event)">
+              <div class="nhsuk-form-group">
+                <label class="nhsuk-label" for="reading-date">Date & Time</label>
+                <input class="nhsuk-input nhsuk-input--width-10" id="reading-date" type="datetime-local" required>
+              </div>
+
+              <!-- BP Fields -->
+              <div id="bp-inputs">
+                <div class="nhsuk-form-group">
+                  <label class="nhsuk-label" for="systolic">Systolic (Top number)</label>
+                  <div class="nhsuk-hint">e.g. 120</div>
+                  <input class="nhsuk-input nhsuk-input--width-5" id="systolic" type="number" min="50" max="250">
+                </div>
+                <div class="nhsuk-form-group">
+                  <label class="nhsuk-label" for="diastolic">Diastolic (Bottom number)</label>
+                  <div class="nhsuk-hint">e.g. 80</div>
+                  <input class="nhsuk-input nhsuk-input--width-5" id="diastolic" type="number" min="30" max="150">
+                </div>
+              </div>
+
+              <!-- Asthma Fields -->
+              <div id="asthma-inputs" class="hidden">
+                <div class="nhsuk-form-group">
+                  <label class="nhsuk-label" for="peakflow">Peak Flow Score (PEFR)</label>
+                  <div class="nhsuk-hint">Highest score from 3 blows in L/min</div>
+                  <input class="nhsuk-input nhsuk-input--width-5" id="peakflow" type="number" min="50" max="900">
+                </div>
+              </div>
+
+              <!-- Weight Fields -->
+              <div id="weight-inputs" class="hidden">
+                <div class="nhsuk-form-group">
+                  <label class="nhsuk-label" for="weight-kg">Weight (in Kilograms)</label>
+                  <div class="nhsuk-hint">e.g. 72.5 (Stones & lbs converted automatically)</div>
+                  <input class="nhsuk-input nhsuk-input--width-5" id="weight-kg" type="number" step="0.1" min="20" max="300">
+                </div>
+              </div>
+
+              <button class="nhsuk-button" type="submit">Save Reading</button>
+            </form>
           </div>
         </div>
+
+        <!-- Guidance Banner -->
+        <div class="nhsuk-inset-text nhsuk-u-margin-bottom-6" id="guidance-banner">
+          <span class="nhsuk-u-visually-hidden">Clinical Note: </span>
+          <p id="guidance-text"><strong>Clinical Standard:</strong> <span class="badge-nice">NICE Guideline</span> Following clinical standards, readings from <strong>Day 1 are automatically excluded</strong> from your final average to give your GP the most accurate picture.</p>
+        </div>
+
+        <!-- Dashboard & Printable Report Area -->
+        <div class="nhsuk-card nhsuk-card--feature" id="report-area">
+          <div class="nhsuk-card__content">
+            
+            <!-- PAGE 1: Header, Patient Details, Summary & Graph -->
+            <div id="pdf-page-1">
+              <h2 class="nhsuk-card__heading nhsuk-heading-m">Your Health Summary</h2>
+
+              <!-- Printable Patient Info Header -->
+              <div id="patient-display-card" class="patient-details-box">
+                <p class="nhsuk-body-s nhsuk-u-margin-bottom-1"><strong>Patient:</strong> <span id="disp-name">Not Provided</span></p>
+                <p class="nhsuk-body-s nhsuk-u-margin-bottom-1"><strong>Date of Birth:</strong> <span id="disp-dob">Not Provided</span></p>
+                <p class="nhsuk-body-s nhsuk-u-margin-bottom-0"><strong>NHS Number:</strong> <span id="disp-nhs">Not Provided</span></p>
+              </div>
+              
+              <div id="summary-metrics">
+                <p class="nhsuk-body">No entries added yet. Start by saving a reading above!</p>
+              </div>
+              
+              <div class="chart-container" id="chart-wrapper">
+                <canvas id="healthChart"></canvas>
+                <img id="chart-img-print" alt="Health Chart Snapshot" />
+              </div>
+            </div>
+
+            <!-- PAGE 2: Text Readings Table -->
+            <div id="text-log-section" class="history-table-container pdf-page-break">
+              <h3 class="nhsuk-heading-m">Logged Readings History</h3>
+              <div id="readings-table-wrapper">
+                <p class="nhsuk-body-s">No logged entries yet.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Export Actions -->
+        <div class="nhsuk-card nhsuk-u-margin-top-4">
+          <div class="nhsuk-card__content">
+            <h3 class="nhsuk-heading-s">Share with Your GP Practice</h3>
+            <p class="nhsuk-body-s">When your practice asks for your readings, choose an option below to send them over:</p>
+            
+            <div class="nhsuk-action-link nhsuk-u-margin-bottom-3">
+              <button class="nhsuk-button" id="pdf-btn" onclick="downloadPDF()">Download PDF Report (Active Tracker View)</button>
+            </div>
+            
+            <button class="nhsuk-button nhsuk-button--secondary" onclick="exportCSV()">Download Active Mode CSV</button>
+            <button class="nhsuk-button nhsuk-button--secondary" onclick="exportAllDataCSV()">Export All Data (Combined CSV)</button>
+            <button class="nhsuk-button nhsuk-button--secondary" onclick="copyGPText()">Copy Plain Text Note</button>
+            <button class="nhsuk-button nhsuk-button--warning" onclick="clearData()">Clear Diary</button>
+          </div>
+        </div>
+
       </div>
     </div>
-
-    <!-- Tracker Controls & Input -->
-    <div class="card">
-      <div class="metric-tabs">
-        <button class="metric-tab active" id="tab-bp" onclick="switchTracker('bp')">Blood Pressure</button>
-        <button class="metric-tab" id="tab-peak" onclick="switchTracker('peak')">Asthma Peak Flow</button>
-        <button class="metric-tab" id="tab-weight" onclick="switchTracker('weight')">Weight</button>
-      </div>
-
-      <!-- Blood Pressure Form -->
-      <form id="form-bp" onsubmit="addReading(event, 'bp')">
-        <h3 class="nhsuk-heading-s">Add Blood Pressure Reading</h3>
-        <div class="nhsuk-grid-row">
-          <div class="nhsuk-grid-column-one-quarter">
-            <label class="nhsuk-label" for="bpDate">Date</label>
-            <input class="nhsuk-input" id="bpDate" type="date" required>
-          </div>
-          <div class="nhsuk-grid-column-one-quarter">
-            <label class="nhsuk-label" for="bpTime">Time Slot</label>
-            <select class="nhsuk-select" id="bpTime">
-              <option value="Morning">Morning</option>
-              <option value="Evening">Evening</option>
-            </select>
-          </div>
-          <div class="nhsuk-grid-column-one-quarter">
-            <label class="nhsuk-label" for="bpSys">Systolic (mmHg)</label>
-            <input class="nhsuk-input" id="bpSys" type="number" min="50" max="250" placeholder="120" required>
-          </div>
-          <div class="nhsuk-grid-column-one-quarter">
-            <label class="nhsuk-label" for="bpDia">Diastolic (mmHg)</label>
-            <input class="nhsuk-input" id="bpDia" type="number" min="30" max="150" placeholder="80" required>
-          </div>
-        </div>
-        <button class="nhsuk-button nhsuk-u-margin-top-3" type="submit">Log BP Reading</button>
-      </form>
-
-      <!-- Peak Flow Form -->
-      <form id="form-peak" class="hidden" onsubmit="addReading(event, 'peak')">
-        <h3 class="nhsuk-heading-s">Add Asthma Peak Flow Reading</h3>
-        <div class="nhsuk-grid-row">
-          <div class="nhsuk-grid-column-one-third">
-            <label class="nhsuk-label" for="peakDate">Date</label>
-            <input class="nhsuk-input" id="peakDate" type="date" required>
-          </div>
-          <div class="nhsuk-grid-column-one-third">
-            <label class="nhsuk-label" for="peakTime">Time Slot</label>
-            <select class="nhsuk-select" id="peakTime">
-              <option value="Morning">Morning</option>
-              <option value="Evening">Evening</option>
-            </select>
-          </div>
-          <div class="nhsuk-grid-column-one-third">
-            <label class="nhsuk-label" for="peakVal">PEFR (L/min)</label>
-            <input class="nhsuk-input" id="peakVal" type="number" min="50" max="900" placeholder="450" required>
-          </div>
-        </div>
-        <button class="nhsuk-button nhsuk-u-margin-top-3" type="submit">Log Peak Flow</button>
-      </form>
-
-      <!-- Weight Form -->
-      <form id="form-weight" class="hidden" onsubmit="addReading(event, 'weight')">
-        <h3 class="nhsuk-heading-s">Add Weight Reading</h3>
-        <div class="nhsuk-grid-row">
-          <div class="nhsuk-grid-column-one-half">
-            <label class="nhsuk-label" for="weightDate">Date</label>
-            <input class="nhsuk-input" id="weightDate" type="date" required>
-          </div>
-          <div class="nhsuk-grid-column-one-half">
-            <label class="nhsuk-label" for="weightVal">Weight (kg)</label>
-            <input class="nhsuk-input" id="weightVal" type="number" step="0.1" min="20" max="300" placeholder="70.5" required>
-          </div>
-        </div>
-        <button class="nhsuk-button nhsuk-u-margin-top-3" type="submit">Log Weight</button>
-      </form>
-    </div>
-
-    <!-- Report Wrapper Target for PDF Export -->
-    <div id="pdf-report-content">
-      
-      <!-- Summary Table Section (Page 1) -->
-      <div class="card" id="pdf-table-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h2 class="nhsuk-heading-m" id="report-title">Blood Pressure Logs</h2>
-          <div id="nice-avg-banner" class="nhsuk-inset-text nhsuk-u-margin-0" style="padding: 10px 15px;">
-            <strong>NICE 7-Day Average:</strong> <span id="niceAvgVal">No Data</span>
-          </div>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table class="nhsuk-table" id="readingsTable">
-            <thead class="nhsuk-table__head">
-              <tr class="nhsuk-table__row" id="tableHeaderRow">
-                <!-- Header populated via JS -->
-              </tr>
-            </thead>
-            <tbody class="nhsuk-table__body" id="tableBodyRow">
-              <!-- Readings populated via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Chart Section (Forced onto Page 2 on iOS & Desktop) -->
-      <div class="card pdf-page-break" id="pdf-chart-section">
-        <h3 class="nhsuk-heading-s">Visual Trend Analysis</h3>
-        <div class="pdf-chart-container">
-          <canvas id="healthChart"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Export & Data Tools -->
-    <div class="card">
-      <h2 class="nhsuk-heading-m">Export & Submission Tools</h2>
-      <p class="nhsuk-body-m">Generate clinical records for submission to your GP practice via online consultation forms or attachments.</p>
-      
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button class="nhsuk-button" onclick="exportToPDF()">Download PDF Report</button>
-        <button class="nhsuk-button nhsuk-button--secondary" onclick="exportActiveCSV()">Export Active Stream CSV</button>
-        <button class="nhsuk-button nhsuk-button--secondary" onclick="exportCombinedCSV()">Export All Data (Combined CSV)</button>
-        <button class="nhsuk-button nhsuk-button--secondary" onclick="copyFormattedText()">Copy Text for Consultation Portal</button>
-        <button class="nhsuk-button nhsuk-button--warning" onclick="clearActiveData()" style="margin-left: auto;">Clear Active Log</button>
-      </div>
-    </div>
-
   </main>
 
   <script>
-    // State & Storage
-    let activeTracker = 'bp';
-    let healthData = JSON.parse(localStorage.getItem('myHealthBridgeData')) || {
-      patient: { name: '', dob: '', nhs: '' },
-      bp: [],
-      peak: [],
-      weight: []
-    };
+    let readings = JSON.parse(localStorage.getItem('nhs_patient_readings')) || [];
+    let patientDetails = JSON.parse(localStorage.getItem('nhs_patient_info')) || { name: '', dob: '', nhs: '' };
     let chartInstance = null;
 
-    // Initialize Page
-    document.addEventListener("DOMContentLoaded", () => {
-      // Set default input dates to today
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('bpDate').value = today;
-      document.getElementById('peakDate').value = today;
-      document.getElementById('weightDate').value = today;
+    document.getElementById('reading-date').value = new Date().toISOString().slice(0, 16);
 
-      // Load patient details
-      if (healthData.patient) {
-        document.getElementById('patientName').value = healthData.patient.name || '';
-        document.getElementById('patientDOB').value = healthData.patient.dob || '';
-        document.getElementById('nhsNumber').value = healthData.patient.nhs || '';
-      }
+    // Load saved patient info into inputs
+    document.getElementById('patient-name').value = patientDetails.name || '';
+    document.getElementById('patient-dob').value = patientDetails.dob || '';
+    document.getElementById('patient-nhs').value = patientDetails.nhs || '';
+    updatePatientDisplay();
 
-      renderTrackerView();
-    });
-
-    function savePatientDetails() {
-      healthData.patient = {
-        name: document.getElementById('patientName').value,
-        dob: document.getElementById('patientDOB').value,
-        nhs: document.getElementById('nhsNumber').value
-      };
-      saveState();
+    // Helper: Convert raw ISO date string to UK Date/Time format (DD/MM/YYYY HH:MM)
+    function formatUKDate(isoStr) {
+      if (!isoStr) return '';
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
     }
 
-    function saveState() {
-      localStorage.setItem('myHealthBridgeData', JSON.stringify(healthData));
-    }
-
-    function switchTracker(type) {
-      activeTracker = type;
-      ['bp', 'peak', 'weight'].forEach(t => {
-        document.getElementById(`tab-${t}`).classList.toggle('active', t === type);
-        document.getElementById(`form-${t}`).classList.toggle('hidden', t !== type);
-      });
-      renderTrackerView();
-    }
-
-    function addReading(event, type) {
-      event.preventDefault();
-      if (type === 'bp') {
-        healthData.bp.push({
-          date: document.getElementById('bpDate').value,
-          time: document.getElementById('bpTime').value,
-          sys: parseInt(document.getElementById('bpSys').value, 10),
-          dia: parseInt(document.getElementById('bpDia').value, 10)
-        });
-        document.getElementById('bpSys').value = '';
-        document.getElementById('bpDia').value = '';
-      } else if (type === 'peak') {
-        healthData.peak.push({
-          date: document.getElementById('peakDate').value,
-          time: document.getElementById('peakTime').value,
-          pefr: parseInt(document.getElementById('peakVal').value, 10)
-        });
-        document.getElementById('peakVal').value = '';
-      } else if (type === 'weight') {
-        const kgVal = parseFloat(document.getElementById('weightVal').value);
-        healthData.weight.push({
-          date: document.getElementById('weightDate').value,
-          kg: kgVal
-        });
-        document.getElementById('weightVal').value = '';
-      }
-
-      saveState();
-      renderTrackerView();
-    }
-
-    function renderTrackerView() {
-      const tableHeader = document.getElementById('tableHeaderRow');
-      const tableBody = document.getElementById('tableBodyRow');
-      const title = document.getElementById('report-title');
-      const avgBanner = document.getElementById('nice-avg-banner');
-
-      tableBody.innerHTML = '';
-
-      if (activeTracker === 'bp') {
-        title.innerText = 'Blood Pressure Logs';
-        avgBanner.classList.remove('hidden');
-        tableHeader.innerHTML = `
-          <th class="nhsuk-table__header">Date</th>
-          <th class="nhsuk-table__header">Slot</th>
-          <th class="nhsuk-table__header">Systolic (mmHg)</th>
-          <th class="nhsuk-table__header">Diastolic (mmHg)</th>
-        `;
-
-        const logs = [...healthData.bp].sort((a,b) => new Date(a.date) - new Date(b.date));
-        logs.forEach(item => {
-          tableBody.innerHTML += `
-            <tr class="nhsuk-table__row">
-              <td class="nhsuk-table__cell">${item.date}</td>
-              <td class="nhsuk-table__cell">${item.time}</td>
-              <td class="nhsuk-table__cell">${item.sys}</td>
-              <td class="nhsuk-table__cell">${item.dia}</td>
-            </tr>
-          `;
-        });
-
-        calculateNICEAverage(logs);
-      } else if (activeTracker === 'peak') {
-        title.innerText = 'Asthma Peak Flow Logs';
-        avgBanner.classList.add('hidden');
-        tableHeader.innerHTML = `
-          <th class="nhsuk-table__header">Date</th>
-          <th class="nhsuk-table__header">Slot</th>
-          <th class="nhsuk-table__header">PEFR (L/min)</th>
-        `;
-
-        const logs = [...healthData.peak].sort((a,b) => new Date(a.date) - new Date(b.date));
-        logs.forEach(item => {
-          tableBody.innerHTML += `
-            <tr class="nhsuk-table__row">
-              <td class="nhsuk-table__cell">${item.date}</td>
-              <td class="nhsuk-table__cell">${item.time}</td>
-              <td class="nhsuk-table__cell">${item.pefr}</td>
-            </tr>
-          `;
-        });
-      } else if (activeTracker === 'weight') {
-        title.innerText = 'Weight Tracking Logs';
-        avgBanner.classList.add('hidden');
-        tableHeader.innerHTML = `
-          <th class="nhsuk-table__header">Date</th>
-          <th class="nhsuk-table__header">Weight (kg)</th>
-          <th class="nhsuk-table__header">Stones & Pounds</th>
-        `;
-
-        const logs = [...healthData.weight].sort((a,b) => new Date(a.date) - new Date(b.date));
-        logs.forEach(item => {
-          const stLbs = kgToStonesLbs(item.kg);
-          tableBody.innerHTML += `
-            <tr class="nhsuk-table__row">
-              <td class="nhsuk-table__cell">${item.date}</td>
-              <td class="nhsuk-table__cell">${item.kg} kg</td>
-              <td class="nhsuk-table__cell">${stLbs}</td>
-            </tr>
-          `;
-        });
-      }
-
-      renderChart();
-    }
-
-    function kgToStonesLbs(kg) {
+    // Helper: Convert KG to Stones & Pounds string
+    function kgToStLbs(kg) {
+      if (!kg || isNaN(kg)) return '';
       const totalLbs = kg * 2.20462;
       const stones = Math.floor(totalLbs / 14);
       const lbs = Math.round(totalLbs % 14);
-      return `${stones} st ${lbs} lbs`;
+      return `${stones}st ${lbs}lbs`;
     }
 
-    function calculateNICEAverage(logs) {
-      const display = document.getElementById('niceAvgVal');
-      if (logs.length === 0) {
-        display.innerText = 'No Data';
-        return;
-      }
-
-      // Group dates to identify Day 1 (NICE guidelines exclude Day 1 readings)
-      const dates = [...new Set(logs.map(l => l.date))].sort();
-      if (dates.length <= 1) {
-        display.innerText = 'Requires > 1 Day Data';
-        return;
-      }
-
-      const validLogs = logs.filter(l => l.date !== dates[0]);
-      if (validLogs.length === 0) {
-        display.innerText = 'Requires > 1 Day Data';
-        return;
-      }
-
-      const avgSys = Math.round(validLogs.reduce((acc, curr) => acc + curr.sys, 0) / validLogs.length);
-      const avgDia = Math.round(validLogs.reduce((acc, curr) => acc + curr.dia, 0) / validLogs.length);
-
-      display.innerText = `${avgSys}/${avgDia} mmHg (excl. Day 1)`;
+    function savePatientDetails() {
+      patientDetails = {
+        name: document.getElementById('patient-name').value.trim(),
+        dob: document.getElementById('patient-dob').value,
+        nhs: document.getElementById('patient-nhs').value.trim()
+      };
+      localStorage.setItem('nhs_patient_info', JSON.stringify(patientDetails));
+      updatePatientDisplay();
     }
 
-    function renderChart() {
+    function updatePatientDisplay() {
+      document.getElementById('disp-name').innerText = patientDetails.name || 'Not Provided';
+      
+      let formattedDob = 'Not Provided';
+      if (patientDetails.dob) {
+        const parts = patientDetails.dob.split('-');
+        if (parts.length === 3) formattedDob = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      document.getElementById('disp-dob').innerText = formattedDob;
+      document.getElementById('disp-nhs').innerText = patientDetails.nhs || 'Not Provided';
+    }
+
+    function toggleMode() {
+      const mode = document.getElementById('tracker-mode').value;
+      document.getElementById('bp-inputs').classList.toggle('hidden', mode !== 'bp');
+      document.getElementById('asthma-inputs').classList.toggle('hidden', mode !== 'asthma');
+      document.getElementById('weight-inputs').classList.toggle('hidden', mode !== 'weight');
+      
+      const guidanceBanner = document.getElementById('guidance-banner');
+      const guidanceText = document.getElementById('guidance-text');
+
+      if (mode === 'bp') {
+        document.getElementById('form-heading').innerText = "Add Today's Blood Pressure";
+        guidanceBanner.classList.remove('hidden');
+        guidanceText.innerHTML = `<strong>Clinical Standard:</strong> <span class="badge-nice">NICE Guideline</span> Following clinical standards, readings from <strong>Day 1 are automatically excluded</strong> from your final average to give your GP the most accurate picture.`;
+      } else if (mode === 'asthma') {
+        document.getElementById('form-heading').innerText = "Add Today's Peak Flow";
+        guidanceBanner.classList.remove('hidden');
+        guidanceText.innerHTML = `<strong>Peak Flow Tracking:</strong> Record your peak flow daily. Take 3 blows and record the highest score.`;
+      } else {
+        document.getElementById('form-heading').innerText = "Add Today's Weight Reading";
+        guidanceBanner.classList.remove('hidden');
+        guidanceText.innerHTML = `<strong>Weight Tracking:</strong> For maximum accuracy, weigh yourself at the same time each morning after using the toilet and before breakfast.`;
+      }
+      
+      updateUI();
+    }
+
+    function addReading(e) {
+      e.preventDefault();
+      const mode = document.getElementById('tracker-mode').value;
+      const dateVal = document.getElementById('reading-date').value;
+      const entry = { id: Date.now(), mode, date: dateVal };
+
+      if (mode === 'bp') {
+        const sys = parseInt(document.getElementById('systolic').value);
+        const dia = parseInt(document.getElementById('diastolic').value);
+        if (isNaN(sys) || isNaN(dia)) return;
+        entry.systolic = sys;
+        entry.diastolic = dia;
+      } else if (mode === 'asthma') {
+        const pf = parseInt(document.getElementById('peakflow').value);
+        if (isNaN(pf)) return;
+        entry.peakflow = pf;
+      } else {
+        const wt = parseFloat(document.getElementById('weight-kg').value);
+        if (isNaN(wt)) return;
+        entry.weight = wt;
+      }
+
+      readings.push(entry);
+      localStorage.setItem('nhs_patient_readings', JSON.stringify(readings));
+      
+      document.getElementById('systolic').value = '';
+      document.getElementById('diastolic').value = '';
+      document.getElementById('peakflow').value = '';
+      document.getElementById('weight-kg').value = '';
+      updateUI();
+    }
+
+    function deleteReading(id) {
+      readings = readings.filter(r => r.id !== id);
+      localStorage.setItem('nhs_patient_readings', JSON.stringify(readings));
+      updateUI();
+    }
+
+    function clearData() {
+      if (confirm('Are you sure you want to clear your diary logs and patient details?')) {
+        readings = [];
+        patientDetails = { name: '', dob: '', nhs: '' };
+        localStorage.removeItem('nhs_patient_readings');
+        localStorage.removeItem('nhs_patient_info');
+        
+        document.getElementById('patient-name').value = '';
+        document.getElementById('patient-dob').value = '';
+        document.getElementById('patient-nhs').value = '';
+        
+        updatePatientDisplay();
+        updateUI();
+      }
+    }
+
+    function renderTable(filteredData, currentMode) {
+      const wrapper = document.getElementById('readings-table-wrapper');
+      if (filteredData.length === 0) {
+        wrapper.innerHTML = '<p class="nhsuk-body-s">No logged entries yet.</p>';
+        return;
+      }
+
+      let colHeader = 'Blood Pressure (mmHg)';
+      if (currentMode === 'asthma') colHeader = 'Peak Flow (L/min)';
+      if (currentMode === 'weight') colHeader = 'Weight (kg & st/lbs)';
+
+      let tableHTML = `
+        <table class="nhsuk-table">
+          <thead class="nhsuk-table__head">
+            <tr class="nhsuk-table__row">
+              <th scope="col" class="nhsuk-table__header">Date & Time</th>
+              <th scope="col" class="nhsuk-table__header">${colHeader}</th>
+              <th scope="col" class="nhsuk-table__header data-html2pdf-ignore">Action</th>
+            </tr>
+          </thead>
+          <tbody class="nhsuk-table__body">
+      `;
+
+      [...filteredData].reverse().forEach(item => {
+        const formattedDate = formatUKDate(item.date);
+        let readingText = '';
+
+        if (currentMode === 'bp') {
+          readingText = `<strong>${item.systolic} / ${item.diastolic}</strong> mmHg`;
+        } else if (currentMode === 'asthma') {
+          readingText = `<strong>${item.peakflow}</strong> L/min`;
+        } else {
+          readingText = `<strong>${item.weight.toFixed(1)}</strong> kg <span class="nhsuk-u-secondary-text-color">(${kgToStLbs(item.weight)})</span>`;
+        }
+
+        tableHTML += `
+          <tr class="nhsuk-table__row">
+            <td class="nhsuk-table__cell">${formattedDate}</td>
+            <td class="nhsuk-table__cell">${readingText}</td>
+            <td class="nhsuk-table__cell data-html2pdf-ignore">
+              <button type="button" class="btn-delete-row" onclick="deleteReading(${item.id})">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tableHTML += `</tbody></table>`;
+      wrapper.innerHTML = tableHTML;
+    }
+
+    function updateUI() {
+      const currentMode = document.getElementById('tracker-mode').value;
+      const filtered = readings.filter(r => r.mode === currentMode).sort((a, b) => new Date(a.date) - new Date(b.date));
+      const summaryDiv = document.getElementById('summary-metrics');
+
+      renderTable(filtered, currentMode);
+
+      if (filtered.length === 0) {
+        summaryDiv.innerHTML = '<p class="nhsuk-body">No entries recorded for this log yet.</p>';
+        if (chartInstance) chartInstance.destroy();
+        return;
+      }
+
+      if (currentMode === 'bp') {
+        const dayGroups = {};
+        filtered.forEach(r => {
+          const day = r.date.split('T')[0];
+          if (!dayGroups[day]) dayGroups[day] = [];
+          dayGroups[day].push(r);
+        });
+
+        const sortedDays = Object.keys(dayGroups).sort();
+        let validReadings = [];
+
+        if (sortedDays.length > 1) {
+          const activeDays = sortedDays.slice(1);
+          activeDays.forEach(d => validReadings.push(...dayGroups[d]));
+        } else {
+          validReadings = filtered;
+        }
+
+        const avgSys = Math.round(validReadings.reduce((a, b) => a + b.systolic, 0) / validReadings.length);
+        const avgDia = Math.round(validReadings.reduce((a, b) => a + b.diastolic, 0) / validReadings.length);
+
+        summaryDiv.innerHTML = `
+          <div class="nhsuk-grid-row nhsuk-panel-group">
+            <div class="nhsuk-grid-column-one-half">
+              <div class="nhsuk-card">
+                <div class="nhsuk-card__content">
+                  <span class="nhsuk-heading-l" style="color: #005ea5;">${avgSys} / ${avgDia} <small style="font-size: 1rem;">mmHg</small></span>
+                  <p class="nhsuk-body-s">NICE 7-Day Average (Day 1 discarded)</p>
+                </div>
+              </div>
+            </div>
+            <div class="nhsuk-grid-column-one-half">
+              <div class="nhsuk-card">
+                <div class="nhsuk-card__content">
+                  <span class="nhsuk-heading-l">${filtered.length}</span>
+                  <p class="nhsuk-body-s">Total Readings Logged</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        renderBPChart(filtered);
+      } else if (currentMode === 'asthma') {
+        const avgPF = Math.round(filtered.reduce((a, b) => a + b.peakflow, 0) / filtered.length);
+        const maxPF = Math.max(...filtered.map(r => r.peakflow));
+
+        summaryDiv.innerHTML = `
+          <div class="nhsuk-grid-row nhsuk-panel-group">
+            <div class="nhsuk-grid-column-one-half">
+              <div class="nhsuk-card">
+                <div class="nhsuk-card__content">
+                  <span class="nhsuk-heading-l" style="color: #005ea5;">${avgPF} <small style="font-size: 1rem;">L/min</small></span>
+                  <p class="nhsuk-body-s">Average Peak Flow</p>
+                </div>
+              </div>
+            </div>
+            <div class="nhsuk-grid-column-one-half">
+              <div class="nhsuk-card">
+                <div class="nhsuk-card__content">
+                  <span class="nhsuk-heading-l">${maxPF} <small style="font-size: 1rem;">L/min</small></span>
+                  <p class="nhsuk-body-s">Personal Best in Diary</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        renderAsthmaChart(filtered);
+      } else {
+        const latestWeight = filtered[filtered.length - 1].weight;
+        const initialWeight = filtered[0].weight;
+        const weightDiff = (latestWeight - initialWeight).toFixed(1);
+        const diffText = weightDiff > 0 ? `+${weightDiff} kg` : `${weightDiff} kg`;
+
+        summaryDiv.innerHTML = `
+          <div class="nhsuk-grid-row nhsuk-panel-group">
+            <div class="nhsuk-grid-column-one-half">
+              <div class="nhsuk-card">
+                <div class="nhsuk-card__content">
+                  <span class="nhsuk-heading-l" style="color: #4c2c92;">${latestWeight.toFixed(1)} <small style="font-size: 1rem;">kg</small></span>
+                  <p class="nhsuk-body-s">Latest Weight (${kgToStLbs(latestWeight)})</p>
+                </div>
+              </div>
+            </div>
+            <div class="nhsuk-grid-column-one-half">
+              <div class="nhsuk-card">
+                <div class="nhsuk-card__content">
+                  <span class="nhsuk-heading-l">${diffText}</span>
+                  <p class="nhsuk-body-s">Total Weight Change</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        renderWeightChart(filtered);
+      }
+    }
+
+    function renderBPChart(data) {
       const ctx = document.getElementById('healthChart').getContext('2d');
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
-
-      let labels = [];
-      let datasets = [];
-
-      if (activeTracker === 'bp') {
-        const logs = [...healthData.bp].sort((a,b) => new Date(a.date) - new Date(b.date));
-        labels = logs.map(l => `${l.date} (${l.time[0]})`);
-        datasets = [
-          { label: 'Systolic (mmHg)', data: logs.map(l => l.sys), borderColor: '#d5281b', backgroundColor: 'rgba(213,40,27,0.1)', fill: true, tension: 0.2 },
-          { label: 'Diastolic (mmHg)', data: logs.map(l => l.dia), borderColor: '#005ea5', backgroundColor: 'rgba(0,94,165,0.1)', fill: true, tension: 0.2 }
-        ];
-      } else if (activeTracker === 'peak') {
-        const logs = [...healthData.peak].sort((a,b) => new Date(a.date) - new Date(b.date));
-        labels = logs.map(l => `${l.date} (${l.time[0]})`);
-        datasets = [
-          { label: 'PEFR (L/min)', data: logs.map(l => l.pefr), borderColor: '#007f3b', backgroundColor: 'rgba(0,127,59,0.1)', fill: true, tension: 0.2 }
-        ];
-      } else if (activeTracker === 'weight') {
-        const logs = [...healthData.weight].sort((a,b) => new Date(a.date) - new Date(b.date));
-        labels = logs.map(l => l.date);
-        datasets = [
-          { label: 'Weight (kg)', data: logs.map(l => l.kg), borderColor: '#4c2c92', backgroundColor: 'rgba(76,44,146,0.1)', fill: true, tension: 0.2 }
-        ];
-      }
+      if (chartInstance) chartInstance.destroy();
 
       chartInstance = new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets },
-        options: {
-          responsive: true,
+        data: {
+          labels: data.map(d => formatUKDate(d.date)),
+          datasets: [
+            { label: 'Systolic', data: data.map(d => d.systolic), borderColor: '#d4351c', backgroundColor: '#d4351c', tension: 0.2 },
+            { label: 'Diastolic', data: data.map(d => d.diastolic), borderColor: '#005a36', backgroundColor: '#005a36', tension: 0.2 }
+          ]
+        },
+        options: { 
+          responsive: true, 
           maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top' }
-          },
+          animation: false,
           scales: {
-            y: { beginAtZero: false }
-          }
-        }
-      });
-    }
-
-    // PDF Export function optimized for iOS Safari & Desktop
-    function exportToPDF() {
-      const element = document.getElementById('pdf-report-content');
-      
-      const opt = {
-        margin:       [10, 10, 10, 10],
-        filename:     `MyHealthBridge_${activeTracker.toUpperCase()}_Report.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-          scale: 2, 
-          useCORS: true,
-          logging: false,
-          onclone: (clonedDoc) => {
-            const chartSec = clonedDoc.getElementById('pdf-chart-section');
-            if (chartSec) {
-              chartSec.style.display = 'block';
+            x: {
+              ticks: {
+                maxTicksLimit: 8,
+                maxRotation: 0
+              }
             }
           }
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { 
-          mode: ['css', 'legacy'], 
-          before: '.pdf-page-break' 
         }
+      });
+    }
+
+    function renderAsthmaChart(data) {
+      const ctx = document.getElementById('healthChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => formatUKDate(d.date)),
+          datasets: [
+            { label: 'Peak Flow (L/min)', data: data.map(d => d.peakflow), borderColor: '#005ea5', backgroundColor: 'rgba(0,94,165,0.1)', fill: true }
+          ]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              ticks: {
+                maxTicksLimit: 8,
+                maxRotation: 0
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderWeightChart(data) {
+      const ctx = document.getElementById('healthChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => formatUKDate(d.date)),
+          datasets: [
+            { label: 'Weight (kg)', data: data.map(d => d.weight), borderColor: '#4c2c92', backgroundColor: 'rgba(76, 44, 146, 0.1)', fill: true, tension: 0.2 }
+          ]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw;
+                  return `Weight: ${val} kg (${kgToStLbs(val)})`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                maxTicksLimit: 8,
+                maxRotation: 0
+              }
+            }
+          }
+        }
+      });
+    }
+
+    async function downloadPDF() {
+      const btn = document.getElementById('pdf-btn');
+      const element = document.getElementById('report-area');
+      const canvas = document.getElementById('healthChart');
+      const chartImg = document.getElementById('chart-img-print');
+
+      if (readings.length === 0) {
+        alert('Please add at least one reading before generating a PDF report.');
+        return;
+      }
+
+      btn.innerText = "Generating PDF...";
+      btn.disabled = true;
+
+      if (chartInstance && canvas) {
+        chartImg.src = canvas.toDataURL('image/png');
+        chartImg.style.display = 'block';
+        canvas.style.display = 'none';
+      }
+
+      const opt = {
+        margin:       0.4,
+        filename:     `MyHealthBridge-Report-${patientDetails.name ? patientDetails.name.replace(/\s+/g, '_') : 'Patient'}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'] }
       };
 
-      html2pdf().set(opt).from(element).save();
-    }
+      try {
+        await html2pdf().set(opt).from(element).save();
+      } catch (err) {
+        console.error('PDF Generation Error:', err);
+        alert('Failed to generate PDF. Please try again.');
+      } finally {
+        if (canvas) canvas.style.display = 'block';
+        if (chartImg) chartImg.style.display = 'none';
 
-    function exportActiveCSV() {
-      let csvContent = "data:text/csv;charset=utf-8,";
-      if (activeTracker === 'bp') {
-        csvContent += "Date,Time Slot,Systolic (mmHg),Diastolic (mmHg)\n";
-        healthData.bp.forEach(r => { csvContent += `${r.date},${r.time},${r.sys},${r.dia}\n`; });
-      } else if (activeTracker === 'peak') {
-        csvContent += "Date,Time Slot,PEFR (L/min)\n";
-        healthData.peak.forEach(r => { csvContent += `${r.date},${r.time},${r.pefr}\n`; });
-      } else if (activeTracker === 'weight') {
-        csvContent += "Date,Weight (kg),Stones & Pounds\n";
-        healthData.weight.forEach(r => { csvContent += `${r.date},${r.kg},"${kgToStonesLbs(r.kg)}"\n`; });
-      }
-
-      downloadCSVFile(csvContent, `MyHealthBridge_${activeTracker}_log.csv`);
-    }
-
-    function exportCombinedCSV() {
-      let csvContent = "data:text/csv;charset=utf-8,Category,Date,Time Slot,Value 1,Value 2,Notes\n";
-      
-      healthData.bp.forEach(r => {
-        csvContent += `Blood Pressure,${r.date},${r.time},${r.sys},${r.dia},Systolic/Diastolic (mmHg)\n`;
-      });
-      healthData.peak.forEach(r => {
-        csvContent += `Peak Flow,${r.date},${r.time},${r.pefr},,PEFR (L/min)\n`;
-      });
-      healthData.weight.forEach(r => {
-        csvContent += `Weight,${r.date},N/A,${r.kg},,"${kgToStonesLbs(r.kg)}"\n`;
-      });
-
-      downloadCSVFile(csvContent, `MyHealthBridge_Combined_Data.csv`);
-    }
-
-    function downloadCSVFile(content, fileName) {
-      const encodedUri = encodeURI(content);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    function copyFormattedText() {
-      const p = healthData.patient;
-      let text = `PATIENT HEALTH REPORT - MYHEALTHBRIDGE\n`;
-      text += `Name: ${p.name || 'N/A'} | DOB: ${p.dob || 'N/A'} | NHS: ${p.nhs || 'N/A'}\n`;
-      text += `--------------------------------------------------\n`;
-
-      if (activeTracker === 'bp') {
-        text += `STREAM: Blood Pressure Log\n`;
-        const avg = document.getElementById('niceAvgVal').innerText;
-        text += `NICE 7-Day Average: ${avg}\n\n`;
-        healthData.bp.forEach(r => {
-          text += `${r.date} (${r.time}): ${r.sys}/${r.dia} mmHg\n`;
-        });
-      } else if (activeTracker === 'peak') {
-        text += `STREAM: Asthma Peak Flow Log\n\n`;
-        healthData.peak.forEach(r => {
-          text += `${r.date} (${r.time}): ${r.pefr} L/min\n`;
-        });
-      } else if (activeTracker === 'weight') {
-        text += `STREAM: Weight Tracker Log\n\n`;
-        healthData.weight.forEach(r => {
-          text += `${r.date}: ${r.kg} kg (${kgToStonesLbs(r.kg)})\n`;
-        });
-      }
-
-      navigator.clipboard.writeText(text).then(() => {
-        alert("Summary report copied to clipboard! You can now paste this directly into your GP online consultation portal.");
-      });
-    }
-
-    function clearActiveData() {
-      if (confirm(`Are you sure you want to delete all entries in the ${activeTracker.toUpperCase()} tracker?`)) {
-        healthData[activeTracker] = [];
-        saveState();
-        renderTrackerView();
+        btn.innerText = "Download PDF Report (Active Tracker View)";
+        btn.disabled = false;
       }
     }
+
+    function exportCSV() {
+      const mode = document.getElementById('tracker-mode').value;
+      const filtered = readings.filter(r => r.mode === mode);
+
+      if (filtered.length === 0) {
+        alert('No readings recorded for the current mode to export.');
+        return;
+      }
+
+      let csv = `Patient_Name,"${patientDetails.name || 'Not Provided'}"\n`;
+      csv += `Patient_DOB,"${patientDetails.dob || 'Not Provided'}"\n`;
+      csv += `NHS_Number,"${patientDetails.nhs || 'Not Provided'}"\n\n`;
+
+      if (mode === 'bp') csv += "Date_Time,Systolic_mmHg,Diastolic_mmHg\n";
+      else if (mode === 'asthma') csv += "Date_Time,PeakFlow_Lmin\n";
+      else csv += "Date_Time,Weight_kg,Weight_StLbs\n";
+
+      filtered.forEach(r => {
+        const dateFormatted = formatUKDate(r.date);
+        if (mode === 'bp') csv += `"${dateFormatted}",${r.systolic},${r.diastolic}\n`;
+        else if (mode === 'asthma') csv += `"${dateFormatted}",${r.peakflow}\n`;
+        else csv += `"${dateFormatted}",${r.weight},"${kgToStLbs(r.weight)}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `MyHealthBridge-Export-${mode}.csv`);
+      a.click();
+    }
+
+    function exportAllDataCSV() {
+      if (readings.length === 0) {
+        alert('No readings logged in any category to export.');
+        return;
+      }
+
+      let csv = `--- MYHEALTHBRIDGE COMBINED EXPORT ---\n`;
+      csv += `Patient Name: "${patientDetails.name || 'Not Provided'}"\n`;
+      csv += `DOB: "${patientDetails.dob || 'Not Provided'}"\n`;
+      csv += `NHS Number: "${patientDetails.nhs || 'Not Provided'}"\n`;
+      csv += `Export Date: "${new Date().toLocaleDateString('en-GB')}"\n\n`;
+
+      const bpReadings = readings.filter(r => r.mode === 'bp').sort((a, b) => new Date(a.date) - new Date(b.date));
+      const asthmaReadings = readings.filter(r => r.mode === 'asthma').sort((a, b) => new Date(a.date) - new Date(b.date));
+      const weightReadings = readings.filter(r => r.mode === 'weight').sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (bpReadings.length > 0) {
+        csv += `--- BLOOD PRESSURE READINGS ---\n`;
+        csv += `Date_Time,Systolic_mmHg,Diastolic_mmHg\n`;
+        bpReadings.forEach(r => {
+          csv += `"${formatUKDate(r.date)}",${r.systolic},${r.diastolic}\n`;
+        });
+        csv += `\n`;
+      }
+
+      if (asthmaReadings.length > 0) {
+        csv += `--- PEAK FLOW READINGS ---\n`;
+        csv += `Date_Time,PeakFlow_Lmin\n`;
+        asthmaReadings.forEach(r => {
+          csv += `"${formatUKDate(r.date)}",${r.peakflow}\n`;
+        });
+        csv += `\n`;
+      }
+
+      if (weightReadings.length > 0) {
+        csv += `--- WEIGHT READINGS ---\n`;
+        csv += `Date_Time,Weight_kg,Weight_StLbs\n`;
+        weightReadings.forEach(r => {
+          csv += `"${formatUKDate(r.date)}",${r.weight},"${kgToStLbs(r.weight)}"\n`;
+        });
+        csv += `\n`;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `MyHealthBridge-All-Data.csv`);
+      a.click();
+    }
+
+    function copyGPText() {
+      const mode = document.getElementById('tracker-mode').value;
+      const filtered = readings.filter(r => r.mode === mode);
+
+      if (filtered.length === 0) {
+        alert('No data to copy.');
+        return;
+      }
+
+      let summaryText = `--- MYHEALTHBRIDGE DIARY EXPORT ---\n`;
+      summaryText += `Patient Name: ${patientDetails.name || 'Not Provided'}\n`;
+      summaryText += `DOB: ${patientDetails.dob || 'Not Provided'}\n`;
+      summaryText += `NHS Number: ${patientDetails.nhs || 'Not Provided'}\n`;
+      summaryText += `Mode: ${mode.toUpperCase()}\n`;
+      summaryText += `Exported: ${new Date().toLocaleDateString('en-GB')}\n\n`;
+
+      filtered.forEach(r => {
+        const dateFormatted = formatUKDate(r.date);
+        if (mode === 'bp') {
+          summaryText += `${dateFormatted}: BP ${r.systolic}/${r.diastolic} mmHg\n`;
+        } else if (mode === 'asthma') {
+          summaryText += `${dateFormatted}: PEFR ${r.peakflow} L/min\n`;
+        } else {
+          summaryText += `${dateFormatted}: Weight ${r.weight} kg (${kgToStLbs(r.weight)})\n`;
+        }
+      });
+
+      navigator.clipboard.writeText(summaryText);
+      alert('Summary copied! You can paste this directly into online consultation forms.');
+    }
+
+    updateUI();
   </script>
+
 </body>
 </html>
