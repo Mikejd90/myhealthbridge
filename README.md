@@ -4,7 +4,7 @@
 
 [**Live Demo »**](https://mikejd90.github.io/myhealthbridge/)
 
-Built using the official **NHS.UK Frontend Framework**, the app offers a clear, accessible, and intuitive interface that aligns with UK healthcare design standards.
+Built using the official NHS.UK Frontend Framework, the app offers a clear, accessible, and intuitive interface that aligns with UK healthcare design standards.
 
 ---
 
