@@ -39,7 +39,7 @@
       color: #942514;
     }
 
-    /* Print / PDF PDF-Specific Overrides */
+    /* Print / PDF Specific Overrides */
     .pdf-report-container {
       padding: 10px;
       background: white;
@@ -99,7 +99,7 @@
           <select class="nhsuk-select" id="tracker-mode" onchange="toggleMode()">
             <option value="bp">Blood Pressure (7-Day Diary)</option>
             <option value="asthma">Asthma Peak Flow Diary</option>
-            <option value="weight">Weight Tracker (kg & Stone/lbs)</option>
+            <option value="weight">Weight Tracker (kg &amp; Stone/lbs)</option>
           </select>
         </div>
 
@@ -110,7 +110,7 @@
 
             <form id="tracker-form" onsubmit="addReading(event)">
               <div class="nhsuk-form-group">
-                <label class="nhsuk-label" for="reading-date">Date & Time</label>
+                <label class="nhsuk-label" for="reading-date">Date &amp; Time</label>
                 <input class="nhsuk-input nhsuk-input--width-10" id="reading-date" type="datetime-local" required>
               </div>
 
@@ -141,7 +141,7 @@
               <div id="weight-inputs" class="hidden">
                 <div class="nhsuk-form-group">
                   <label class="nhsuk-label" for="weight-kg">Weight (in Kilograms)</label>
-                  <div class="nhsuk-hint">e.g. 72.5 (Stones & lbs converted automatically)</div>
+                  <div class="nhsuk-hint">e.g. 72.5 (Stones &amp; lbs converted automatically)</div>
                   <input class="nhsuk-input nhsuk-input--width-5" id="weight-kg" type="number" step="0.1" min="20" max="300">
                 </div>
               </div>
@@ -174,7 +174,7 @@
               <p class="nhsuk-body">No entries added yet. Start by saving a reading above!</p>
             </div>
             
-            <!-- On-Screen Graph (Ignored during PDF Export) -->
+            <!-- On-Screen Graph -->
             <div class="chart-container data-html2pdf-ignore" id="chart-wrapper">
               <canvas id="healthChart"></canvas>
             </div>
@@ -216,9 +216,14 @@
     let patientDetails = JSON.parse(localStorage.getItem('nhs_patient_info')) || { name: '', dob: '', nhs: '' };
     let chartInstance = null;
 
-    document.getElementById('reading-date').value = new Date().toISOString().slice(0, 16);
+    function setCurrentTimestamp() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('reading-date').value = now.toISOString().slice(0, 16);
+    }
 
-    // Load saved patient info into inputs
+    setCurrentTimestamp();
+
     document.getElementById('patient-name').value = patientDetails.name || '';
     document.getElementById('patient-dob').value = patientDetails.dob || '';
     document.getElementById('patient-nhs').value = patientDetails.nhs || '';
@@ -323,6 +328,7 @@
       document.getElementById('diastolic').value = '';
       document.getElementById('peakflow').value = '';
       document.getElementById('weight-kg').value = '';
+      setCurrentTimestamp();
       updateUI();
     }
 
@@ -363,7 +369,7 @@
         <table class="nhsuk-table">
           <thead class="nhsuk-table__head">
             <tr class="nhsuk-table__row">
-              <th scope="col" class="nhsuk-table__header">Date & Time</th>
+              <th scope="col" class="nhsuk-table__header">Date &amp; Time</th>
               <th scope="col" class="nhsuk-table__header">${colHeader}</th>
               <th scope="col" class="nhsuk-table__header data-html2pdf-ignore">Action</th>
             </tr>
@@ -739,7 +745,8 @@
       alert('Summary copied! You can paste this directly into online consultation forms.');
     }
 
-    updateUI();
+    // Initialize initial state
+    toggleMode();
   </script>
 
 </body>
