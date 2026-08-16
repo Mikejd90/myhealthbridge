@@ -592,44 +592,50 @@
     }
 
     async function downloadPDF() {
-      const btn = document.getElementById('pdf-btn');
-      const element = document.getElementById('report-area');
-      const mode = document.getElementById('tracker-mode').value;
-      const currentReadings = readings.filter(r => r.mode === mode);
+  const btn = document.getElementById('pdf-btn');
+  const element = document.getElementById('report-area');
+  const chartWrapper = document.getElementById('chart-wrapper');
+  const mode = document.getElementById('tracker-mode').value;
+  const currentReadings = readings.filter(r => r.mode === mode);
 
-      if (currentReadings.length === 0) {
-        alert('Please add at least one reading to the current active log before generating a PDF report.');
-        return;
-      }
+  if (currentReadings.length === 0) {
+    alert('Please add at least one reading to the current active log before generating a PDF report.');
+    return;
+  }
 
-      btn.innerText = "Generating PDF...";
-      btn.disabled = true;
+  btn.innerText = "Generating PDF...";
+  btn.disabled = true;
 
-      const opt = {
-        margin:       0.4,
-        filename:     `MyHealthBridge-Report-${patientDetails.name ? patientDetails.name.replace(/\s+/g, '_') : 'Patient'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-          scale: 2, 
-          useCORS: true, 
-          logging: false,
-          scrollY: 0,
-          scrollX: 0
-        },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
-      };
+  // Temporarily hide the graph for the PDF capture
+  chartWrapper.style.display = 'none';
 
-      try {
-        await html2pdf().set(opt).from(element).save();
-      } catch (err) {
-        console.error('PDF Generation Error:', err);
-        alert('Failed to generate PDF. Please try again.');
-      } finally {
-        btn.innerText = "Download PDF Summary";
-        btn.disabled = false;
-      }
-    }
+  const opt = {
+    margin:       0.4,
+    filename:     `MyHealthBridge-Report-${patientDetails.name ? patientDetails.name.replace(/\s+/g, '_') : 'Patient'}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { 
+      scale: 2, 
+      useCORS: true, 
+      logging: false,
+      scrollY: 0,
+      scrollX: 0
+    },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+    pagebreak:    { mode: ['css', 'legacy'] }
+  };
+
+  try {
+    await html2pdf().set(opt).from(element).save();
+  } catch (err) {
+    console.error('PDF Generation Error:', err);
+    alert('Failed to generate PDF. Please try again.');
+  } finally {
+    // Restore the graph display on the web page
+    chartWrapper.style.display = 'block';
+    btn.innerText = "Download PDF Summary";
+    btn.disabled = false;
+  }
+}
 
     function exportCSV() {
       const mode = document.getElementById('tracker-mode').value;
