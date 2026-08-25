@@ -67,28 +67,40 @@
     }
     .app-header .container {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
+      position: relative;
     }
     .brand-logo {
       display: flex;
       align-items: center;
       gap: 12px;
       text-decoration: none;
+      text-align: left;
     }
     .brand-icon {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, #0D9488, #0284C7);
+      width: 40px;
+      height: 40px;
+      background: rgba(13, 148, 136, 0.15);
+      border: 1px solid rgba(13, 148, 136, 0.4);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #FFFFFF;
-      box-shadow: 0 4px 10px rgba(13, 148, 136, 0.35);
-      transition: transform 0.2s ease;
+      color: var(--accent);
+      transition: all 0.2s ease;
     }
-    .brand-icon:hover { transform: scale(1.05); }
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke-width: 2.2;
+    }
+    .brand-logo:hover .brand-icon {
+      background: var(--accent);
+      color: #FFFFFF;
+      border-color: var(--accent);
+      transform: scale(1.03);
+    }
     .brand-text {
       color: #FFFFFF;
       font-size: 21px;
@@ -103,6 +115,8 @@
     }
 
     .storage-badge {
+      position: absolute;
+      right: 0;
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -113,6 +127,16 @@
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .storage-badge {
+        position: static;
+        margin-top: 10px;
+      }
+      .app-header .container {
+        flex-direction: column;
+      }
     }
 
     /* Layout Cards */
@@ -373,11 +397,7 @@
     <div class="nhsuk-width-container container">
       <a href="#" class="brand-logo">
         <div class="brand-icon">
-          <!-- Medical Bridge SVG Icon -->
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 18C3 12 7 8 12 8C17 8 21 12 21 18"></path>
-            <path d="M2 14H6L9 9L12 17L15 11L18 14H22"></path>
-          </svg>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
         </div>
         <div>
           <span class="brand-text">MyHealthBridge</span>
@@ -689,7 +709,7 @@
     <!-- Export & Data Actions Card -->
     <div class="pro-card" style="background: #F8FAFC; border-style: dashed;">
       <div class="card-title">
-        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 0--2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         Export & Data Management Actions
       </div>
       <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
@@ -776,71 +796,106 @@
 
     function setHistoryFilter(filter) {
       activeFilter = filter;
-      document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
-      document.getElementById(`filter-${filter}`).classList.add('active');
+      document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+      const chip = document.getElementById(`filter-${filter}`);
+      if (chip) chip.classList.add('active');
       renderApp();
     }
 
     function updateLiveFeedback() {
-      const box = document.getElementById('live-feedback-box');
-      box.style.display = 'none';
+      const fbBox = document.getElementById('live-feedback-box');
+      fbBox.className = 'live-feedback-box';
+      fbBox.style.display = 'none';
 
       if (currentMode === 'bp') {
         const sys = parseInt(document.getElementById('input-sys').value);
         const dia = parseInt(document.getElementById('input-dia').value);
         if (sys && dia) {
-          box.style.display = 'flex';
-          if (sys >= 140 || dia >= 90) {
-            box.className = 'live-feedback-box feedback-danger';
-            box.innerHTML = `⚠️ Stage 2 Hypertension range detected (${sys}/${dia} mmHg). Consult clinician if persistent.`;
-          } else if ((sys >= 135 && sys < 140) || (dia >= 85 && dia < 90)) {
-            box.className = 'live-feedback-box feedback-warn';
-            box.innerHTML = `⚡ Stage 1 Home Blood Pressure Threshold met (${sys}/${dia} mmHg).`;
+          fbBox.style.display = 'flex';
+          if (sys >= 180 || dia >= 120) {
+            fbBox.className += ' feedback-danger';
+            fbBox.innerHTML = '🚨 <strong>Crisis Warning:</strong> Extremely high reading. Seek emergency medical evaluation.';
+          } else if (sys >= 140 || dia >= 90) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '⚠️ <strong>Stage 2 High:</strong> Elevated blood pressure detected.';
+          } else if (sys >= 130 || dia >= 80) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '⚡ <strong>Stage 1 High:</strong> Slightly elevated blood pressure.';
+          } else if (sys < 90 || dia < 60) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '📉 <strong>Low:</strong> Below standard range.';
           } else {
-            box.className = 'live-feedback-box feedback-normal';
-            box.innerHTML = `✅ Reading within optimal range (${sys}/${dia} mmHg).`;
-          }
-        }
-      } else if (currentMode === 'hydration') {
-        const fluid = parseInt(document.getElementById('input-fluid-ml').value);
-        const activity = document.getElementById('input-activity-level').value;
-        if (fluid) {
-          box.style.display = 'flex';
-          let target = activity === 'Intense' ? 3000 : (activity === 'Moderate' ? 2200 : 1800);
-          let pct = Math.min(Math.round((fluid / target) * 100), 100);
-          if (fluid < target * 0.6) {
-            box.className = 'live-feedback-box feedback-warn';
-            box.innerHTML = `💧 ${fluid}ml logged (${pct}% of ~${target}ml estimated target for ${activity.toLowerCase()} activity level).`;
-          } else {
-            box.className = 'live-feedback-box feedback-normal';
-            box.innerHTML = `✅ ${fluid}ml logged (${pct}% of ~${target}ml estimated daily target achieved).`;
-          }
-        }
-      } else if (currentMode === 'temp') {
-        const temp = parseFloat(document.getElementById('input-temp').value);
-        if (temp) {
-          box.style.display = 'flex';
-          if (temp >= 38.0) {
-            box.className = 'live-feedback-box feedback-danger';
-            box.innerHTML = `🤒 Fever threshold met (${temp}°C). Monitor for symptoms.`;
-          } else if (temp < 36.0) {
-            box.className = 'live-feedback-box feedback-warn';
-            box.innerHTML = `❄️ Low body temperature reading (${temp}°C).`;
-          } else {
-            box.className = 'live-feedback-box feedback-normal';
-            box.innerHTML = `✅ Normal body temperature (${temp}°C).`;
+            fbBox.className += ' feedback-normal';
+            fbBox.innerHTML = '✅ <strong>Normal:</strong> Optimal blood pressure range.';
           }
         }
       } else if (currentMode === 'pulse') {
         const pulse = parseInt(document.getElementById('input-pulse').value);
         if (pulse) {
-          box.style.display = 'flex';
-          if (pulse > 100) {
-            box.className = 'live-feedback-box feedback-warn';
-            box.innerHTML = `⚡ Elevated resting pulse (${pulse} bpm).`;
+          fbBox.style.display = 'flex';
+          if (pulse < 60) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '📉 <strong>Bradycardia:</strong> Heart rate is below 60 bpm.';
+          } else if (pulse > 100) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '⚡ <strong>Tachycardia:</strong> Heart rate is above 100 bpm.';
           } else {
-            box.className = 'live-feedback-box feedback-normal';
-            box.innerHTML = `✅ Resting heart rate logged (${pulse} bpm).`;
+            fbBox.className += ' feedback-normal';
+            fbBox.innerHTML = '✅ <strong>Normal:</strong> Normal resting heart rate.';
+          }
+        }
+      } else if (currentMode === 'temp') {
+        const temp = parseFloat(document.getElementById('input-temp').value);
+        if (temp) {
+          fbBox.style.display = 'flex';
+          if (temp >= 38.0) {
+            fbBox.className += ' feedback-danger';
+            fbBox.innerHTML = '🌡️ <strong>Fever:</strong> Body temperature is elevated.';
+          } else if (temp < 36.0) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '📉 <strong>Low Temp:</strong> Temperature is below standard resting range.';
+          } else {
+            fbBox.className += ' feedback-normal';
+            fbBox.innerHTML = '✅ <strong>Normal:</strong> Normal body temperature.';
+          }
+        }
+      } else if (currentMode === 'hydration') {
+        const ml = parseInt(document.getElementById('input-fluid-ml').value);
+        if (ml) {
+          fbBox.style.display = 'flex';
+          if (ml < 1500) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '💧 <strong>Low Hydration:</strong> Recommended baseline is ~2000ml daily.';
+          } else {
+            fbBox.className += ' feedback-normal';
+            fbBox.innerHTML = '✅ <strong>Good Hydration:</strong> Adequate fluid intake recorded.';
+          }
+        }
+      } else if (currentMode === 'glucose') {
+        const val = parseFloat(document.getElementById('input-glucose').value);
+        if (val) {
+          fbBox.style.display = 'flex';
+          if (val < 4.0) {
+            fbBox.className += ' feedback-danger';
+            fbBox.innerHTML = '🚨 <strong>Hypoglycemia Risk:</strong> Glucose reading is low (< 4.0 mmol/L).';
+          } else if (val > 11.1) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '⚡ <strong>High Glucose:</strong> Reading is elevated (> 11.1 mmol/L).';
+          } else {
+            fbBox.className += ' feedback-normal';
+            fbBox.innerHTML = '✅ <strong>In Target Range:</strong> Blood glucose within normal limits.';
+          }
+        }
+      } else if (currentMode === 'alcohol') {
+        const units = parseFloat(document.getElementById('input-alcohol-units').value);
+        if (units) {
+          fbBox.style.display = 'flex';
+          if (units > 14) {
+            fbBox.className += ' feedback-warn';
+            fbBox.innerHTML = '⚠️ <strong>High Intake:</strong> Exceeds recommended 14 weekly units limit.';
+          } else {
+            fbBox.className += ' feedback-normal';
+            fbBox.innerHTML = '✅ <strong>Logged:</strong> Alcohol intake recorded.';
           }
         }
       }
@@ -848,61 +903,428 @@
 
     function handleFormSubmit(e) {
       e.preventDefault();
-      const timestamp = document.getElementById('input-date').value;
-      let newEntry = { id: Date.now(), mode: currentMode, timestamp };
+      const dt = document.getElementById('input-date').value;
+      if (!dt) return;
+
+      let record = { id: Date.now(), timestamp: dt, type: currentMode };
 
       if (currentMode === 'bp') {
-        newEntry.sys = parseInt(document.getElementById('input-sys').value);
-        newEntry.dia = parseInt(document.getElementById('input-dia').value);
+        record.sys = parseInt(document.getElementById('input-sys').value);
+        record.dia = parseInt(document.getElementById('input-dia').value);
+        if (!record.sys || !record.dia) return;
       } else if (currentMode === 'pulse') {
-        newEntry.pulse = parseInt(document.getElementById('input-pulse').value);
+        record.val = parseInt(document.getElementById('input-pulse').value);
+        if (!record.val) return;
       } else if (currentMode === 'temp') {
-        newEntry.temp = parseFloat(document.getElementById('input-temp').value);
+        record.val = parseFloat(document.getElementById('input-temp').value);
+        if (!record.val) return;
       } else if (currentMode === 'pefr') {
-        newEntry.pefr = parseInt(document.getElementById('input-pefr').value);
+        record.val = parseInt(document.getElementById('input-pefr').value);
+        if (!record.val) return;
       } else if (currentMode === 'hydration') {
-        newEntry.fluidMl = parseInt(document.getElementById('input-fluid-ml').value);
-        newEntry.activityLevel = document.getElementById('input-activity-level').value;
+        record.val = parseInt(document.getElementById('input-fluid-ml').value);
+        record.activity = document.getElementById('input-activity-level').value;
+        if (!record.val) return;
       } else if (currentMode === 'glucose') {
-        newEntry.glucose = parseFloat(document.getElementById('input-glucose').value);
-        newEntry.context = document.getElementById('input-glucose-context').value;
+        record.val = parseFloat(document.getElementById('input-glucose').value);
+        record.context = document.getElementById('input-glucose-context').value;
+        if (!record.val) return;
       } else if (currentMode === 'weight') {
-        newEntry.weight = parseFloat(document.getElementById('input-weight').value);
+        record.val = parseFloat(document.getElementById('input-weight').value);
+        if (!record.val) return;
       } else if (currentMode === 'sleep') {
-        newEntry.sleepHrs = parseFloat(document.getElementById('input-sleep-hrs').value);
-        newEntry.quality = document.getElementById('input-sleep-quality').value;
+        record.val = parseFloat(document.getElementById('input-sleep-hrs').value);
+        record.quality = document.getElementById('input-sleep-quality').value;
+        if (!record.val) return;
       } else if (currentMode === 'activity') {
-        newEntry.steps = parseInt(document.getElementById('input-steps').value);
-        newEntry.activeMins = parseInt(document.getElementById('input-active-mins').value);
+        record.steps = parseInt(document.getElementById('input-steps').value) || 0;
+        record.activeMins = parseInt(document.getElementById('input-active-mins').value) || 0;
       } else if (currentMode === 'smoking') {
-        newEntry.smokeStatus = document.getElementById('input-smoke-status').value;
-        newEntry.smokeQty = parseInt(document.getElementById('input-smoke-qty').value) || 0;
+        record.status = document.getElementById('input-smoke-status').value;
+        record.qty = parseInt(document.getElementById('input-smoke-qty').value) || 0;
       } else if (currentMode === 'alcohol') {
-        newEntry.alcoholUnits = parseFloat(document.getElementById('input-alcohol-units').value);
-        newEntry.alcoholType = document.getElementById('input-alcohol-type').value;
+        record.val = parseFloat(document.getElementById('input-alcohol-units').value);
+        record.beverage = document.getElementById('input-alcohol-type').value || 'Unspecified';
+        if (isNaN(record.val)) return;
       } else if (currentMode === 'diet') {
-        newEntry.calories = parseInt(document.getElementById('input-calories').value);
-        newEntry.dietNotes = document.getElementById('input-diet-notes').value;
+        record.val = parseInt(document.getElementById('input-calories').value) || 0;
+        record.notes = document.getElementById('input-diet-notes').value || 'N/A';
       }
 
-      readings.push(newEntry);
+      readings.unshift(record);
       localStorage.setItem('mhb_readings', JSON.stringify(readings));
       
-      document.getElementById('reading-form').reset();
+      // Clear numeric inputs
+      document.querySelectorAll('#reading-form input[type="number"]').forEach(i => i.value = '');
+      document.querySelectorAll('#reading-form input[type="text"]').forEach(i => i.value = '');
       resetDatetimeInput();
-      selectTrackerMode(currentMode);
+      document.getElementById('live-feedback-box').style.display = 'none';
+
+      renderApp();
     }
 
-    function deleteReading(id) {
+    function deleteRecord(id) {
       readings = readings.filter(r => r.id !== id);
       localStorage.setItem('mhb_readings', JSON.stringify(readings));
       renderApp();
     }
 
+    function getFilteredReadings() {
+      let filtered = readings.filter(r => r.type === currentMode);
+      if (activeFilter === '7d') {
+        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
+      } else if (activeFilter === '30d') {
+        const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
+      }
+      return filtered;
+    }
+
+    function renderApp() {
+      renderSummary();
+      renderChart();
+      renderTable();
+    }
+
+    function renderSummary() {
+      const container = document.getElementById('summary-content');
+      const list = getFilteredReadings();
+
+      if (list.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); margin: 0; font-size: 14px;">No records available for this category and filter range.</p>`;
+        return;
+      }
+
+      if (currentMode === 'bp') {
+        const latest = list[0];
+        let status = 'Normal';
+        let badgeClass = 'badge-normal';
+        if (latest.sys >= 140 || latest.dia >= 90) { status = 'Stage 2 High'; badgeClass = 'badge-danger'; }
+        else if (latest.sys >= 130 || latest.dia >= 80) { status = 'Stage 1 High'; badgeClass = 'badge-warn'; }
+        else if (latest.sys < 90 || latest.dia < 60) { status = 'Low'; badgeClass = 'badge-warn'; }
+
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div class="summary-value">${latest.sys}/${latest.dia} <span style="font-size:16px; font-weight:600;">mmHg</span></div>
+                <div class="summary-subtext">Latest Blood Pressure reading</div>
+              </div>
+              <span class="badge ${badgeClass}">${status}</span>
+            </div>
+          </div>
+        `;
+      } else if (currentMode === 'pulse') {
+        const latest = list[0];
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${latest.val} <span style="font-size:16px; font-weight:600;">bpm</span></div>
+            <div class="summary-subtext">Latest Heart Rate reading</div>
+          </div>
+        `;
+      } else if (currentMode === 'temp') {
+        const latest = list[0];
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${latest.val} <span style="font-size:16px; font-weight:600;">°C</span></div>
+            <div class="summary-subtext">Latest Temperature reading</div>
+          </div>
+        `;
+      } else if (currentMode === 'pefr') {
+        const latest = list[0];
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${latest.val} <span style="font-size:16px; font-weight:600;">L/min</span></div>
+            <div class="summary-subtext">Latest Peak Expiratory Flow Rate</div>
+          </div>
+        `;
+      } else if (currentMode === 'hydration') {
+        const total = list.reduce((acc, curr) => acc + (curr.val || 0), 0);
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${total} <span style="font-size:16px; font-weight:600;">ml</span></div>
+            <div class="summary-subtext">Total Fluid Intake recorded in selected period</div>
+          </div>
+        `;
+      } else if (currentMode === 'glucose') {
+        const latest = list[0];
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${latest.val} <span style="font-size:16px; font-weight:600;">mmol/L</span></div>
+            <div class="summary-subtext">Latest Glucose Reading (${latest.context})</div>
+          </div>
+        `;
+      } else if (currentMode === 'weight') {
+        const latest = list[0];
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${latest.val} <span style="font-size:16px; font-weight:600;">kg</span></div>
+            <div class="summary-subtext">Latest Weight entry</div>
+          </div>
+        `;
+      } else if (currentMode === 'sleep') {
+        const avg = (list.reduce((a, b) => a + (b.val || 0), 0) / list.length).toFixed(1);
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${avg} <span style="font-size:16px; font-weight:600;">hrs</span></div>
+            <div class="summary-subtext">Average Sleep Duration per log in selection</div>
+          </div>
+        `;
+      } else if (currentMode === 'activity') {
+        const totalSteps = list.reduce((a, b) => a + (b.steps || 0), 0);
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${totalSteps.toLocaleString()} <span style="font-size:16px; font-weight:600;">steps</span></div>
+            <div class="summary-subtext">Total Activity Steps logged</div>
+          </div>
+        `;
+      } else if (currentMode === 'smoking') {
+        const latest = list[0];
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${latest.status}</div>
+            <div class="summary-subtext">Daily Quantity: ${latest.qty} cigarettes/vapes</div>
+          </div>
+        `;
+      } else if (currentMode === 'alcohol') {
+        const totalUnits = list.reduce((a, b) => a + (b.val || 0), 0);
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${totalUnits.toFixed(1)} <span style="font-size:16px; font-weight:600;">Units</span></div>
+            <div class="summary-subtext">Total Alcohol Units logged in selected period</div>
+          </div>
+        `;
+      } else if (currentMode === 'diet') {
+        const avgCal = Math.round(list.reduce((a, b) => a + (b.val || 0), 0) / list.length);
+        container.innerHTML = `
+          <div class="summary-metric-box">
+            <div class="summary-value">${avgCal} <span style="font-size:16px; font-weight:600;">kcal</span></div>
+            <div class="summary-subtext">Average Intake per entry logged</div>
+          </div>
+        `;
+      }
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('metricChart').getContext('2d');
+      const dataList = getFilteredReadings().slice().reverse();
+
+      if (chartInstance) chartInstance.destroy();
+
+      if (dataList.length === 0) {
+        document.getElementById('chart-wrapper').style.display = 'none';
+        return;
+      }
+      document.getElementById('chart-wrapper').style.display = 'block';
+
+      const labels = dataList.map(r => new Date(r.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+      let datasets = [];
+
+      if (currentMode === 'bp') {
+        datasets = [
+          {
+            label: 'Systolic (mmHg)',
+            data: dataList.map(r => r.sys),
+            borderColor: '#0D9488',
+            backgroundColor: 'rgba(13, 148, 136, 0.1)',
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: 'Diastolic (mmHg)',
+            data: dataList.map(r => r.dia),
+            borderColor: '#0284C7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            tension: 0.3,
+            fill: true
+          }
+        ];
+      } else if (currentMode === 'activity') {
+        datasets = [{
+          label: 'Steps',
+          data: dataList.map(r => r.steps),
+          borderColor: '#0D9488',
+          backgroundColor: 'rgba(13, 148, 136, 0.2)',
+          type: 'bar'
+        }];
+      } else {
+        datasets = [{
+          label: currentMode.toUpperCase(),
+          data: dataList.map(r => r.val || r.qty || 0),
+          borderColor: '#0D9488',
+          backgroundColor: 'rgba(13, 148, 136, 0.15)',
+          tension: 0.3,
+          fill: true
+        }];
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: currentMode === 'activity' ? 'bar' : 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: { beginAtZero: false, grid: { color: '#E2E8F0' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      const list = getFilteredReadings();
+
+      tbody.innerHTML = '';
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4">
+              <div class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <p>No historical logs found for this category.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      list.forEach(item => {
+        const tr = document.createElement('tr');
+        const dtStr = new Date(item.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+        
+        let readingVal = '';
+        let notesVal = '';
+
+        if (item.type === 'bp') {
+          readingVal = `<strong>${item.sys}/${item.dia}</strong> mmHg`;
+          notesVal = (item.sys >= 140 || item.dia >= 90) ? '<span class="badge badge-danger">High</span>' : '<span class="badge badge-normal">Normal Range</span>';
+        } else if (item.type === 'pulse') {
+          readingVal = `<strong>${item.val}</strong> bpm`;
+          notesVal = 'Pulse Rate';
+        } else if (item.type === 'temp') {
+          readingVal = `<strong>${item.val}</strong> °C`;
+          notesVal = item.val >= 38.0 ? '<span class="badge badge-danger">Fever</span>' : 'Body Temperature';
+        } else if (item.type === 'pefr') {
+          readingVal = `<strong>${item.val}</strong> L/min`;
+          notesVal = 'Peak Flow';
+        } else if (item.type === 'hydration') {
+          readingVal = `<strong>${item.val}</strong> ml`;
+          notesVal = `Activity: ${item.activity}`;
+        } else if (item.type === 'glucose') {
+          readingVal = `<strong>${item.val}</strong> mmol/L`;
+          notesVal = `Context: ${item.context}`;
+        } else if (item.type === 'weight') {
+          readingVal = `<strong>${item.val}</strong> kg`;
+          notesVal = 'Body Weight';
+        } else if (item.type === 'sleep') {
+          readingVal = `<strong>${item.val}</strong> hrs`;
+          notesVal = `Quality: ${item.quality}`;
+        } else if (item.type === 'activity') {
+          readingVal = `<strong>${item.steps.toLocaleString()}</strong> steps`;
+          notesVal = `Active Mins: ${item.activeMins}`;
+        } else if (item.type === 'smoking') {
+          readingVal = `<strong>${item.status}</strong>`;
+          notesVal = `Daily Qty: ${item.qty}`;
+        } else if (item.type === 'alcohol') {
+          readingVal = `<strong>${item.val}</strong> Units`;
+          notesVal = `Notes: ${item.beverage}`;
+        } else if (item.type === 'diet') {
+          readingVal = `<strong>${item.val}</strong> kcal`;
+          notesVal = `Meal: ${item.notes}`;
+        }
+
+        tr.innerHTML = `
+          <td>${dtStr}</td>
+          <td>${readingVal}</td>
+          <td>${notesVal}</td>
+          <td style="text-align: right;">
+            <button onclick="deleteRecord(${item.id})" style="background:none; border:none; color:#EF4444; cursor:pointer; font-weight:600; font-size:12px;">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Export Actions
+    function downloadPDF() {
+      const element = document.getElementById('report-area');
+      const opt = {
+        margin: 0.3,
+        filename: `MyHealthBridge_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    function exportActiveCSV() {
+      const list = getFilteredReadings();
+      if (list.length === 0) { alert('No data to export.'); return; }
+
+      let csv = 'ID,Date,Type,Data\n';
+      list.forEach(r => {
+        csv += `"${r.id}","${r.timestamp}","${r.type}","${JSON.stringify(r).replace(/"/g, '""')}"\n`;
+      });
+      triggerDownload(csv, `MHB_${currentMode}_Export.csv`);
+    }
+
+    function exportAllCSV() {
+      if (readings.length === 0) { alert('No data to export.'); return; }
+
+      let csv = 'ID,Date,Type,Data\n';
+      readings.forEach(r => {
+        csv += `"${r.id}","${r.timestamp}","${r.type}","${JSON.stringify(r).replace(/"/g, '""')}"\n`;
+      });
+      triggerDownload(csv, `MHB_All_Data_Export.csv`);
+    }
+
+    function triggerDownload(content, filename) {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
+
+    function copyPlainText() {
+      const list = getFilteredReadings();
+      if (list.length === 0) { alert('No data available to copy.'); return; }
+
+      let text = `MyHealthBridge Summary Report\n`;
+      text += `Patient: ${patientDetails.name || 'N/A'} | DOB: ${patientDetails.dob || 'N/A'} | NHS: ${patientDetails.nhs || 'N/A'}\n`;
+      text += `Category: ${currentMode.toUpperCase()}\n----------------------------------------\n`;
+
+      list.forEach(r => {
+        const dt = new Date(r.timestamp).toLocaleString();
+        if (r.type === 'bp') text += `${dt} - BP: ${r.sys}/${r.dia} mmHg\n`;
+        else if (r.type === 'pulse') text += `${dt} - Heart Rate: ${r.val} bpm\n`;
+        else if (r.type === 'temp') text += `${dt} - Temp: ${r.val} °C\n`;
+        else if (r.type === 'pefr') text += `${dt} - Peak Flow: ${r.val} L/min\n`;
+        else if (r.type === 'hydration') text += `${dt} - Fluid: ${r.val} ml (${r.activity})\n`;
+        else if (r.type === 'glucose') text += `${dt} - Glucose: ${r.val} mmol/L (${r.context})\n`;
+        else if (r.type === 'weight') text += `${dt} - Weight: ${r.val} kg\n`;
+        else if (r.type === 'sleep') text += `${dt} - Sleep: ${r.val} hrs (${r.quality})\n`;
+        else if (r.type === 'activity') text += `${dt} - Steps: ${r.steps}, Active Mins: ${r.activeMins}\n`;
+        else if (r.type === 'smoking') text += `${dt} - Status: ${r.status}, Daily Qty: ${r.qty}\n`;
+        else if (r.type === 'alcohol') text += `${dt} - Alcohol: ${r.val} Units (${r.beverage})\n`;
+        else if (r.type === 'diet') text += `${dt} - Calories: ${r.val} kcal (${r.notes})\n`;
+      });
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Report text copied to clipboard successfully!');
+      });
+    }
+
     function clearAllData() {
-      if (confirm("Are you sure you want to clear all stored readings and patient details? This cannot be undone.")) {
-        localStorage.removeItem('mhb_readings');
-        localStorage.removeItem('mhb_patient');
+      if (confirm('Are you sure you want to clear ALL saved records and patient details? This cannot be undone.')) {
+        localStorage.clear();
         readings = [];
         patientDetails = { name: '', dob: '', nhs: '' };
         document.getElementById('patient-name').value = '';
@@ -912,299 +1334,7 @@
       }
     }
 
-    function getFilteredReadings() {
-      let filtered = readings.filter(r => r.mode === currentMode);
-      const now = new Date();
-      if (activeFilter === '7d') {
-        const cutoff = new Date(now.setDate(now.getDate() - 7));
-        filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
-      } else if (activeFilter === '30d') {
-        const cutoff = new Date(now.setDate(now.getDate() - 30));
-        filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
-      }
-      return filtered.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-    }
-
-    function renderApp() {
-      const currentReadings = getFilteredReadings();
-      const tbody = document.getElementById('table-body');
-      tbody.innerHTML = '';
-
-      const thVal1 = document.getElementById('th-val1');
-      const thVal2 = document.getElementById('th-val2');
-
-      const headers = {
-        bp: ['Blood Pressure (mmHg)', 'NICE Category'],
-        pulse: ['Heart Rate (bpm)', 'Status'],
-        temp: ['Temperature (°C)', 'Clinical Status'],
-        pefr: ['Peak Flow (L/min)', 'Status'],
-        hydration: ['Fluid Intake (ml)', 'Activity Context'],
-        glucose: ['Glucose (mmol/L)', 'Context'],
-        weight: ['Weight (kg)', 'Imperial Equiv.'],
-        sleep: ['Sleep Duration', 'Quality Rating'],
-        activity: ['Daily Steps', 'Active Minutes'],
-        smoking: ['Smoking Status', 'Daily Qty / Usage'],
-        alcohol: ['Alcohol Units', 'Beverage Type / Notes'],
-        diet: ['Calorie Intake (kcal)', 'Diet / Macro Notes']
-      };
-
-      thVal1.innerText = headers[currentMode][0];
-      thVal2.innerText = headers[currentMode][1];
-
-      if (currentReadings.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="4">
-              <div class="empty-state">
-                <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <div style="font-weight: 600; color: var(--primary); font-size: 15px;">No entries recorded for this metric</div>
-                <div style="font-size: 13px; margin-top: 4px;">Log a reading above or switch date filter.</div>
-              </div>
-            </td>
-          </tr>`;
-      } else {
-        currentReadings.forEach(r => {
-          const tr = document.createElement('tr');
-          const formattedDate = new Date(r.timestamp).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute:'2-digit' });
-
-          let val1Text = '';
-          let val2Html = '';
-
-          if (currentMode === 'bp') {
-            val1Text = `<strong>🩺 ${r.sys} / ${r.dia}</strong> mmHg`;
-            let badgeClass = 'badge-normal', cat = 'Normal';
-            if (r.sys >= 140 || r.dia >= 90) { badgeClass = 'badge-danger'; cat = 'Stage 2 Hypertension'; }
-            else if (r.sys >= 135 || r.dia >= 85) { badgeClass = 'badge-warn'; cat = 'Stage 1 Hypertension'; }
-            val2Html = `<span class="badge ${badgeClass}">${cat}</span>`;
-          } else if (currentMode === 'hydration') {
-            val1Text = `<strong>💧 ${r.fluidMl}</strong> ml`;
-            val2Html = `<span class="badge badge-normal">${r.activityLevel || 'Moderate'} Activity</span>`;
-          } else if (currentMode === 'pulse') {
-            val1Text = `<strong>❤️ ${r.pulse}</strong> bpm`;
-            val2Html = `<span class="badge badge-normal">Recorded</span>`;
-          } else if (currentMode === 'temp') {
-            val1Text = `<strong>🌡️ ${r.temp}</strong> °C`;
-            let badgeClass = r.temp >= 38.0 ? 'badge-danger' : 'badge-normal';
-            val2Html = `<span class="badge ${badgeClass}">${r.temp >= 38.0 ? 'Fever' : 'Normal'}</span>`;
-          } else if (currentMode === 'pefr') {
-            val1Text = `<strong>🫁 ${r.pefr}</strong> L/min`;
-            val2Html = `<span class="badge badge-normal">Recorded</span>`;
-          } else if (currentMode === 'glucose') {
-            val1Text = `<strong>🩸 ${r.glucose}</strong> mmol/L`;
-            val2Html = `<span class="badge badge-warn">${r.context || 'Unspecified'}</span>`;
-          } else if (currentMode === 'weight') {
-            const lbs = (r.weight * 2.20462).toFixed(1);
-            val1Text = `<strong>⚖️ ${r.weight}</strong> kg`;
-            val2Html = `<span style="color: #475569;">${lbs} lbs</span>`;
-          } else if (currentMode === 'sleep') {
-            val1Text = `<strong>🌙 ${r.sleepHrs}</strong> hrs`;
-            val2Html = `<span class="badge badge-normal">${r.quality}</span>`;
-          } else if (currentMode === 'activity') {
-            val1Text = `<strong>👟 ${r.steps}</strong> steps`;
-            val2Html = `<span>${r.activeMins || 0} mins active</span>`;
-          } else if (currentMode === 'smoking') {
-            val1Text = `<strong>🚭 ${r.smokeStatus}</strong>`;
-            val2Html = `<span>${r.smokeQty} / day</span>`;
-          } else if (currentMode === 'alcohol') {
-            val1Text = `<strong>🍷 ${r.alcoholUnits}</strong> units`;
-            val2Html = `<span>${r.alcoholType || 'Unspecified'}</span>`;
-          } else if (currentMode === 'diet') {
-            val1Text = `<strong>🥗 ${r.calories}</strong> kcal`;
-            val2Html = `<span>${r.dietNotes || 'N/A'}</span>`;
-          }
-
-          tr.innerHTML = `
-            <td>${formattedDate}</td>
-            <td>${val1Text}</td>
-            <td>${val2Html}</td>
-            <td style="text-align: right;"><button class="btn-secondary" style="padding: 4px 10px; font-size: 12px; color: #B91C1C;" onclick="deleteReading(${r.id})">Delete</button></td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-
-      renderSummary(currentReadings);
-      renderChart(currentReadings);
-    }
-
-    function renderSummary(currentReadings) {
-      const summaryContent = document.getElementById('summary-content');
-      if (currentReadings.length === 0) {
-        summaryContent.innerHTML = `<p style="color: var(--text-muted); margin: 0; font-size: 14px;">No data recorded for summary calculation.</p>`;
-        return;
-      }
-
-      if (currentMode === 'bp') {
-        const avgSys = Math.round(currentReadings.reduce((acc, r) => acc + r.sys, 0) / currentReadings.length);
-        const avgDia = Math.round(currentReadings.reduce((acc, r) => acc + r.dia, 0) / currentReadings.length);
-        summaryContent.innerHTML = `
-          <div class="summary-metric-box">
-            <div class="summary-value">🩺 ${avgSys} / ${avgDia} <span style="font-size: 16px; font-weight: 500;">mmHg</span></div>
-            <div class="summary-subtext">Average blood pressure over ${currentReadings.length} entries.</div>
-          </div>`;
-      } else if (currentMode === 'hydration') {
-        const totalMl = currentReadings.reduce((acc, r) => acc + r.fluidMl, 0);
-        const avgMl = Math.round(totalMl / currentReadings.length);
-        summaryContent.innerHTML = `
-          <div class="summary-metric-box">
-            <div class="summary-value">💧 ${avgMl} <span style="font-size: 16px; font-weight: 500;">ml/entry</span></div>
-            <div class="summary-subtext">Average fluid intake logged across entries (${totalMl.toLocaleString()} ml total).</div>
-          </div>`;
-      } else if (currentMode === 'pulse') {
-        const avgPulse = Math.round(currentReadings.reduce((acc, r) => acc + r.pulse, 0) / currentReadings.length);
-        summaryContent.innerHTML = `
-          <div class="summary-metric-box">
-            <div class="summary-value">❤️ ${avgPulse} <span style="font-size: 16px; font-weight: 500;">bpm</span></div>
-            <div class="summary-subtext">Average heart rate in selected period.</div>
-          </div>`;
-      } else if (currentMode === 'temp') {
-        const maxTemp = Math.max(...currentReadings.map(r => r.temp));
-        summaryContent.innerHTML = `
-          <div class="summary-metric-box">
-            <div class="summary-value">🌡️ ${maxTemp} <span style="font-size: 16px; font-weight: 500;">°C</span></div>
-            <div class="summary-subtext">Peak temperature recorded in selected period.</div>
-          </div>`;
-      } else {
-        summaryContent.innerHTML = `<div class="summary-metric-box"><div class="summary-value">${currentReadings.length} <span style="font-size: 16px;">Entries</span></div></div>`;
-      }
-    }
-
-    function renderChart(currentReadings) {
-      const ctx = document.getElementById('metricChart').getContext('2d');
-      if (chartInstance) chartInstance.destroy();
-
-      const sortedAsc = [...currentReadings].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
-      const labels = sortedAsc.map(r => new Date(r.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}));
-
-      let datasets = [];
-      if (currentMode === 'bp') {
-        datasets = [
-          { label: 'Systolic (mmHg)', data: sortedAsc.map(r => r.sys), borderColor: '#0D9488', backgroundColor: 'rgba(13, 148, 136, 0.05)', fill: true, tension: 0.3 },
-          { label: 'Diastolic (mmHg)', data: sortedAsc.map(r => r.dia), borderColor: '#0F172A', backgroundColor: 'transparent', tension: 0.3 }
-        ];
-      } else if (currentMode === 'hydration') {
-        datasets = [{ label: 'Fluid Intake (ml)', data: sortedAsc.map(r => r.fluidMl), borderColor: '#0284C7', backgroundColor: 'rgba(2, 132, 199, 0.08)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'pulse') {
-        datasets = [{ label: 'Pulse (bpm)', data: sortedAsc.map(r => r.pulse), borderColor: '#E11D48', backgroundColor: 'rgba(225, 29, 72, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'temp') {
-        datasets = [{ label: 'Temp (°C)', data: sortedAsc.map(r => r.temp), borderColor: '#EA580C', backgroundColor: 'rgba(234, 88, 12, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'glucose') {
-        datasets = [{ label: 'Glucose (mmol/L)', data: sortedAsc.map(r => r.glucose), borderColor: '#0284C7', backgroundColor: 'rgba(2, 132, 199, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'sleep') {
-        datasets = [{ label: 'Sleep (hrs)', data: sortedAsc.map(r => r.sleepHrs), borderColor: '#6366F1', backgroundColor: 'rgba(99, 102, 241, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'activity') {
-        datasets = [{ label: 'Steps', data: sortedAsc.map(r => r.steps), borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'smoking') {
-        datasets = [{ label: 'Qty / Day', data: sortedAsc.map(r => r.smokeQty), borderColor: '#64748B', backgroundColor: 'rgba(100, 116, 139, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'alcohol') {
-        datasets = [{ label: 'Units', data: sortedAsc.map(r => r.alcoholUnits), borderColor: '#D97706', backgroundColor: 'rgba(217, 119, 6, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'diet') {
-        datasets = [{ label: 'Calories (kcal)', data: sortedAsc.map(r => r.calories), borderColor: '#8B5CF6', backgroundColor: 'rgba(139, 92, 246, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'pefr') {
-        datasets = [{ label: 'PEFR (L/min)', data: sortedAsc.map(r => r.pefr), borderColor: '#0D9488', backgroundColor: 'rgba(13, 148, 136, 0.05)', fill: true, tension: 0.3 }];
-      } else if (currentMode === 'weight') {
-        datasets = [{ label: 'Weight (kg)', data: sortedAsc.map(r => r.weight), borderColor: '#0F172A', backgroundColor: 'rgba(15, 23, 42, 0.05)', fill: true, tension: 0.3 }];
-      }
-
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'top' } },
-          scales: { y: { grid: { color: '#F1F5F9' } }, x: { grid: { display: false } } }
-        }
-      });
-    }
-
-    async function downloadPDF() {
-      const btn = document.getElementById('pdf-btn');
-      const element = document.getElementById('report-area');
-      const chartWrapper = document.getElementById('chart-wrapper');
-
-      btn.innerText = "Generating...";
-      btn.disabled = true;
-      chartWrapper.style.display = 'none';
-
-      const opt = {
-        margin:       0.4,
-        filename:     `MyHealthBridge-Report-${patientDetails.name ? patientDetails.name.replace(/\s+/g, '_') : 'Patient'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-
-      try {
-        await html2pdf().set(opt).from(element).save();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        chartWrapper.style.display = 'block';
-        btn.innerText = "Download PDF Summary";
-        btn.disabled = false;
-      }
-    }
-
-    function exportActiveCSV() {
-      const currentReadings = getFilteredReadings();
-      if (currentReadings.length === 0) return alert('No data available to export.');
-      let csv = "data:text/csv;charset=utf-8,Timestamp,Value1,Value2\n";
-      currentReadings.forEach(r => { 
-        csv += `"${r.timestamp}",${r.sys || r.pulse || r.temp || r.pefr || r.fluidMl || r.glucose || r.weight || r.sleepHrs || r.steps || r.smokeStatus || r.alcoholUnits || r.calories || ''},${r.dia || r.activityLevel || r.context || r.quality || r.activeMins || r.smokeQty || r.alcoholType || r.dietNotes || ''}\n`; 
-      });
-      triggerDownload(csv, `myhealthbridge-${currentMode}-export.csv`);
-    }
-
-    function exportAllCSV() {
-      if (readings.length === 0) return alert('No data available.');
-      let csv = "data:text/csv;charset=utf-8,Category,Timestamp,Value1,Value2\n";
-      readings.forEach(r => { 
-        csv += `"${r.mode}","${r.timestamp}",${r.sys || r.pulse || r.temp || r.pefr || r.fluidMl || r.glucose || r.weight || r.sleepHrs || r.steps || r.smokeStatus || r.alcoholUnits || r.calories || ''},${r.dia || r.activityLevel || r.context || r.quality || r.activeMins || r.smokeQty || r.alcoholType || r.dietNotes || ''}\n`; 
-      });
-      triggerDownload(csv, `myhealthbridge-complete-export.csv`);
-    }
-
-    function triggerDownload(csvContent, filename) {
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    function copyPlainText() {
-      if (readings.length === 0) return alert('No readings available to copy.');
-
-      let text = `MyHealthBridge Triage Log\n`;
-      text += `Patient: ${patientDetails.name || 'N/A'} | DOB: ${patientDetails.dob || 'N/A'} | NHS: ${patientDetails.nhs || 'N/A'}\n`;
-      text += `--------------------------------------------------\n`;
-
-      const sorted = [...readings].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-      sorted.forEach(r => {
-        let val = '';
-        if (r.mode === 'bp') val = `BP: ${r.sys}/${r.dia} mmHg`;
-        else if (r.mode === 'hydration') val = `Hydration: ${r.fluidMl} ml (${r.activityLevel || 'Moderate'} activity)`;
-        else if (r.mode === 'pulse') val = `Pulse: ${r.pulse} bpm`;
-        else if (r.mode === 'temp') val = `Temp: ${r.temp} °C`;
-        else if (r.mode === 'pefr') val = `Peak Flow: ${r.pefr} L/min`;
-        else if (r.mode === 'glucose') val = `Glucose: ${r.glucose} mmol/L (${r.context || 'N/A'})`;
-        else if (r.mode === 'weight') val = `Weight: ${r.weight} kg`;
-        else if (r.mode === 'sleep') val = `Sleep: ${r.sleepHrs} hrs (${r.quality || 'N/A'})`;
-        else if (r.mode === 'activity') val = `Activity: ${r.steps} steps (${r.activeMins || 0} active mins)`;
-        else if (r.mode === 'smoking') val = `Smoking: ${r.smokeStatus} (${r.smokeQty}/day)`;
-        else if (r.mode === 'alcohol') val = `Alcohol: ${r.alcoholUnits} units (${r.alcoholType || 'N/A'})`;
-        else if (r.mode === 'diet') val = `Diet: ${r.calories} kcal (${r.dietNotes || 'N/A'})`;
-
-        text += `${new Date(r.timestamp).toLocaleString()}: ${val}\n`;
-      });
-
-      navigator.clipboard.writeText(text).then(() => alert('Triage plain text copied to clipboard!'));
-    }
-
-    // Initial load
+    // Initialize
     selectTrackerMode('bp');
   </script>
 </body>
