@@ -11,9 +11,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://assets.nhs.uk/css/nhsuk-5.3.0.min.css">
   
-  <!-- Chart.js & html2pdf -->
+  <!-- Chart.js & PDF export -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     :root {
@@ -130,6 +130,7 @@
     }
 
     @media (max-width: 640px) {
+      .patient-profile-grid { grid-template-columns: 1fr; }
       .storage-badge {
         position: static;
         margin-top: 10px;
@@ -216,6 +217,21 @@
     }
 
     /* Form & Input Elements */
+    /* Patient profile alignment */
+    .patient-profile-grid {
+      align-items: start;
+      grid-template-columns: 1.4fr 1fr 1fr;
+    }
+    .patient-profile-grid > div {
+      min-width: 0;
+    }
+    .helper-text {
+      margin: 6px 0 0;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     .form-group-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -307,7 +323,7 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    .btn-secondary:hover { background-color: #F1F5F9; border-color: #CBD5E1; }
+    .btn-secondary:hover { background-color: #F1F5F9; border-color: #CBD5E1; }\n    button:disabled { opacity: .65; cursor: wait; }
     .btn-danger-outline {
       background: #FFFFFF;
       color: #B91C1C;
@@ -347,8 +363,18 @@
       border-color: var(--primary);
     }
 
-    .summary-metric-box {
-      background: linear-gradient(135deg, #F8FAFC, #F1F5F9);
+    .reference-note {
+      margin: -8px 0 16px;
+      padding: 10px 12px;
+      background: #F8FAFC;
+      border-left: 3px solid #94A3B8;
+      border-radius: 6px;
+      color: #475569;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    .summary-metric-box {      background: linear-gradient(135deg, #F8FAFC, #F1F5F9);
       border-left: 4px solid var(--accent);
       border-radius: 8px;
       padding: 18px 20px;
@@ -382,6 +408,25 @@
     .pro-table tr:last-child td { border-bottom: none; }
 
     .app-footer { background: var(--primary); color: #94A3B8; padding: 32px 0; font-size: 13px; margin-top: 60px; border-top: 1px solid #334155; }
+
+    /* UX improvements */
+    .helper-text { font-size: 12px; color: var(--text-muted); margin: 6px 0 0; line-height: 1.45; }
+    .form-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .status-strip { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; margin-top:12px; padding:10px 12px; border-radius:8px; background:#F0FDFA; border:1px solid #CCFBF1; color:#115E59; font-size:12px; }
+    .status-strip strong { font-weight:700; }
+    .btn-secondary:focus-visible, .btn-primary:focus-visible, .btn-danger-outline:focus-visible, .chip-btn:focus-visible, .filter-chip:focus-visible, .segmented-option:focus-within { outline:3px solid rgba(13,148,136,.35); outline-offset:2px; }
+    .export-note { margin: 0 0 14px; font-size: 12px; color: var(--text-muted); line-height:1.5; }
+    .no-print { }
+    @media print {
+      .no-print, .app-header, .emergency-bar, .app-footer { display:none !important; }
+      body { background:#fff !important; }
+      .pro-card { box-shadow:none !important; break-inside:avoid; }
+    }
+    @media (max-width:640px) {
+      .pro-card { padding:18px; }
+      .summary-value { font-size:24px; }
+      .tracker-segmented-grid { grid-template-columns:1fr 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -420,7 +465,7 @@
         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
         Patient Profile
       </div>
-      <div class="form-group-grid">
+      <div class="form-group-grid patient-profile-grid">
         <div>
           <label class="pro-label" for="patient-name">👤 Full Name</label>
           <input class="pro-input" id="patient-name" type="text" placeholder="e.g. Jane Doe">
@@ -431,7 +476,7 @@
         </div>
         <div>
           <label class="pro-label" for="patient-nhs">🪪 NHS Number (Optional)</label>
-          <input class="pro-input" id="patient-nhs" type="text" placeholder="10-digit number" maxlength="10">
+          <input class="pro-input" id="patient-nhs" type="text" inputmode="numeric" placeholder="e.g. 123 456 7890" maxlength="12" autocomplete="off" aria-describedby="nhs-help">\n          <p id="nhs-help" class="helper-text">Optional. For demonstration only. Stored locally in this browser; do not enter real patient information.</p>
         </div>
       </div>
     </div>
@@ -651,11 +696,16 @@
 
         <!-- Dynamic Live Feedback Box -->
         <div id="live-feedback-box" class="live-feedback-box" style="display:none;"></div>
+        <div class="status-strip" role="status" aria-live="polite">
+          <span>💾 <strong id="save-status">Ready</strong></span>
+          <span id="record-count">0 readings stored</span>
+        </div>
       </form>
     </div>
 
     <!-- Summary Widget -->
     <div class="pro-card">
+      <div class="reference-note" role="note">Reference flags are for demonstration only. They are not a diagnosis or medical advice; readings should be interpreted by an appropriate healthcare professional.</div>
       <div class="card-title" id="summary-title">
         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
         Clinical & Lifestyle Summary
@@ -712,15 +762,17 @@
         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 0--2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         Export & Data Management Actions
       </div>
+      <p class="export-note">Exports use the currently selected category and date filter. Email opens your device's default email application and places the metrics into the message body; nothing is sent automatically.</p>
       <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button class="btn-primary" id="pdf-btn" onclick="downloadPDF()">Download PDF Summary</button>
+          <button class="btn-primary" id="pdf-btn" onclick="downloadPDF()">📄 Download PDF Summary</button>
+          <button class="btn-secondary" onclick="emailMetrics()">✉️ Email Metrics</button>
           <button class="btn-secondary" onclick="exportActiveCSV()">Export CSV (Active Category)</button>
           <button class="btn-secondary" onclick="exportAllCSV()">Export All CSV Data</button>
-          <button class="btn-secondary" onclick="copyPlainText()">Copy Plain Text for Triage Submission</button>
+          <button class="btn-secondary" onclick="copyPlainText()">Copy Plain Text</button>
         </div>
         <div>
-          <button class="btn-danger-outline" onclick="clearAllData()">Clear All Stored Data</button>
+          <button class="btn-danger-outline" onclick="clearAllData()">Clear MyHealthBridge Data</button>
         </div>
       </div>
     </div>
@@ -737,8 +789,18 @@
 
   <script>
     // App State
-    let readings = JSON.parse(localStorage.getItem('mhb_readings')) || [];
-    let patientDetails = JSON.parse(localStorage.getItem('mhb_patient')) || { name: '', dob: '', nhs: '' };
+    let readings = [];
+    let patientDetails = { name: '', dob: '', nhs: '' };
+    try {
+      const savedReadings = JSON.parse(localStorage.getItem('mhb_readings') || '[]');
+      readings = Array.isArray(savedReadings) ? savedReadings : [];
+      const savedPatient = JSON.parse(localStorage.getItem('mhb_patient') || '{}');
+      if (savedPatient && typeof savedPatient === 'object') patientDetails = { ...patientDetails, ...savedPatient };
+    } catch (error) {
+      console.warn('Stored MyHealthBridge data could not be read safely:', error);
+      readings = [];
+      patientDetails = { name: '', dob: '', nhs: '' };
+    }
     let currentMode = 'bp';
     let activeFilter = 'all';
     let chartInstance = null;
@@ -770,8 +832,10 @@
 
     ['patient-name', 'patient-dob', 'patient-nhs'].forEach(id => {
       document.getElementById(id).addEventListener('input', (e) => {
-        patientDetails[id.replace('patient-', '')] = e.target.value;
+        const key = id.replace('patient-', '');
+        patientDetails[key] = e.target.value;
         localStorage.setItem('mhb_patient', JSON.stringify(patientDetails));
+        setSaveStatus('Patient details saved locally');
       });
     });
 
@@ -814,19 +878,19 @@
           fbBox.style.display = 'flex';
           if (sys >= 180 || dia >= 120) {
             fbBox.className += ' feedback-danger';
-            fbBox.innerHTML = '🚨 <strong>Crisis Warning:</strong> Extremely high reading. Seek emergency medical evaluation.';
+            fbBox.innerHTML = '🚨 <strong>Outside example range:</strong> Reading is outside the example reference range. If you are concerned, seek appropriate medical advice.';
           } else if (sys >= 140 || dia >= 90) {
             fbBox.className += ' feedback-warn';
-            fbBox.innerHTML = '⚠️ <strong>Stage 2 High:</strong> Elevated blood pressure detected.';
+            fbBox.innerHTML = '⚠️ <strong>Outside example range:</strong> Blood pressure reading is above the example reference range.';
           } else if (sys >= 130 || dia >= 80) {
             fbBox.className += ' feedback-warn';
-            fbBox.innerHTML = '⚡ <strong>Stage 1 High:</strong> Slightly elevated blood pressure.';
+            fbBox.innerHTML = '⚡ <strong>Outside example range:</strong> Blood pressure reading is above the example reference range.';
           } else if (sys < 90 || dia < 60) {
             fbBox.className += ' feedback-warn';
-            fbBox.innerHTML = '📉 <strong>Low:</strong> Below standard range.';
+            fbBox.innerHTML = '📉 <strong>Outside example range:</strong> Blood pressure reading is below the example reference range.';
           } else {
             fbBox.className += ' feedback-normal';
-            fbBox.innerHTML = '✅ <strong>Normal:</strong> Optimal blood pressure range.';
+            fbBox.innerHTML = '✅ <strong>Within example reference range:</strong> This is a demonstration flag only.';
           }
         }
       } else if (currentMode === 'pulse') {
@@ -835,10 +899,10 @@
           fbBox.style.display = 'flex';
           if (pulse < 60) {
             fbBox.className += ' feedback-warn';
-            fbBox.innerHTML = '📉 <strong>Bradycardia:</strong> Heart rate is below 60 bpm.';
+            fbBox.innerHTML = '📉 <strong>Outside example range:</strong> Heart rate is below the example reference range.';
           } else if (pulse > 100) {
             fbBox.className += ' feedback-warn';
-            fbBox.innerHTML = '⚡ <strong>Tachycardia:</strong> Heart rate is above 100 bpm.';
+            fbBox.innerHTML = '⚡ <strong>Outside example range:</strong> Heart rate is above the example reference range.';
           } else {
             fbBox.className += ' feedback-normal';
             fbBox.innerHTML = '✅ <strong>Normal:</strong> Normal resting heart rate.';
@@ -850,10 +914,10 @@
           fbBox.style.display = 'flex';
           if (temp >= 38.0) {
             fbBox.className += ' feedback-danger';
-            fbBox.innerHTML = '🌡️ <strong>Fever:</strong> Body temperature is elevated.';
+            fbBox.innerHTML = '🌡️ <strong>Outside example range:</strong> Body temperature is above the example reference range.';
           } else if (temp < 36.0) {
             fbBox.className += ' feedback-warn';
-            fbBox.innerHTML = '📉 <strong>Low Temp:</strong> Temperature is below standard resting range.';
+            fbBox.innerHTML = '📉 <strong>Outside example range:</strong> Temperature is below the example reference range.';
           } else {
             fbBox.className += ' feedback-normal';
             fbBox.innerHTML = '✅ <strong>Normal:</strong> Normal body temperature.';
@@ -877,10 +941,10 @@
           fbBox.style.display = 'flex';
           if (val < 4.0) {
             fbBox.className += ' feedback-danger';
-            fbBox.innerHTML = '🚨 <strong>Hypoglycemia Risk:</strong> Glucose reading is low (< 4.0 mmol/L).';
+            fbBox.innerHTML = '🚨 <strong>Outside example range:</strong> Glucose reading is below the example reference range.';
           } else if (val > 11.1) {
             fbBox.className += ' feedback-warn';
-            fbBox.innerHTML = '⚡ <strong>High Glucose:</strong> Reading is elevated (> 11.1 mmol/L).';
+            fbBox.innerHTML = '⚡ <strong>Outside example range:</strong> Glucose reading is above the example reference range.';
           } else {
             fbBox.className += ' feedback-normal';
             fbBox.innerHTML = '✅ <strong>In Target Range:</strong> Blood glucose within normal limits.';
@@ -914,28 +978,28 @@
         if (!record.sys || !record.dia) return;
       } else if (currentMode === 'pulse') {
         record.val = parseInt(document.getElementById('input-pulse').value);
-        if (!record.val) return;
+        if (Number.isNaN(record.val)) return;
       } else if (currentMode === 'temp') {
         record.val = parseFloat(document.getElementById('input-temp').value);
-        if (!record.val) return;
+        if (Number.isNaN(record.val)) return;
       } else if (currentMode === 'pefr') {
         record.val = parseInt(document.getElementById('input-pefr').value);
-        if (!record.val) return;
+        if (Number.isNaN(record.val)) return;
       } else if (currentMode === 'hydration') {
         record.val = parseInt(document.getElementById('input-fluid-ml').value);
         record.activity = document.getElementById('input-activity-level').value;
-        if (!record.val) return;
+        if (Number.isNaN(record.val)) return;
       } else if (currentMode === 'glucose') {
         record.val = parseFloat(document.getElementById('input-glucose').value);
         record.context = document.getElementById('input-glucose-context').value;
-        if (!record.val) return;
+        if (Number.isNaN(record.val)) return;
       } else if (currentMode === 'weight') {
         record.val = parseFloat(document.getElementById('input-weight').value);
-        if (!record.val) return;
+        if (Number.isNaN(record.val)) return;
       } else if (currentMode === 'sleep') {
         record.val = parseFloat(document.getElementById('input-sleep-hrs').value);
         record.quality = document.getElementById('input-sleep-quality').value;
-        if (!record.val) return;
+        if (Number.isNaN(record.val)) return;
       } else if (currentMode === 'activity') {
         record.steps = parseInt(document.getElementById('input-steps').value) || 0;
         record.activeMins = parseInt(document.getElementById('input-active-mins').value) || 0;
@@ -960,12 +1024,14 @@
       resetDatetimeInput();
       document.getElementById('live-feedback-box').style.display = 'none';
 
+      setSaveStatus('Reading added successfully');
       renderApp();
     }
 
     function deleteRecord(id) {
       readings = readings.filter(r => r.id !== id);
       localStorage.setItem('mhb_readings', JSON.stringify(readings));
+      setSaveStatus('Reading deleted');
       renderApp();
     }
 
@@ -998,11 +1064,11 @@
 
       if (currentMode === 'bp') {
         const latest = list[0];
-        let status = 'Normal';
+        let status = 'Within example range';
         let badgeClass = 'badge-normal';
-        if (latest.sys >= 140 || latest.dia >= 90) { status = 'Stage 2 High'; badgeClass = 'badge-danger'; }
-        else if (latest.sys >= 130 || latest.dia >= 80) { status = 'Stage 1 High'; badgeClass = 'badge-warn'; }
-        else if (latest.sys < 90 || latest.dia < 60) { status = 'Low'; badgeClass = 'badge-warn'; }
+        if (latest.sys >= 140 || latest.dia >= 90) { status = 'Outside example range'; badgeClass = 'badge-danger'; }
+        else if (latest.sys >= 130 || latest.dia >= 80) { status = 'Outside example range'; badgeClass = 'badge-warn'; }
+        else if (latest.sys < 90 || latest.dia < 60) { status = 'Outside example range'; badgeClass = 'badge-warn'; }
 
         container.innerHTML = `
           <div class="summary-metric-box">
@@ -1174,6 +1240,12 @@
       });
     }
 
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+      }[ch]));
+    }
+
     function renderTable() {
       const tbody = document.getElementById('table-body');
       const list = getFilteredReadings();
@@ -1202,41 +1274,41 @@
         let notesVal = '';
 
         if (item.type === 'bp') {
-          readingVal = `<strong>${item.sys}/${item.dia}</strong> mmHg`;
+          readingVal = `<strong>${escapeHTML(item.sys)}/${escapeHTML(item.dia)}</strong> mmHg`;
           notesVal = (item.sys >= 140 || item.dia >= 90) ? '<span class="badge badge-danger">High</span>' : '<span class="badge badge-normal">Normal Range</span>';
         } else if (item.type === 'pulse') {
-          readingVal = `<strong>${item.val}</strong> bpm`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> bpm`;
           notesVal = 'Pulse Rate';
         } else if (item.type === 'temp') {
-          readingVal = `<strong>${item.val}</strong> °C`;
-          notesVal = item.val >= 38.0 ? '<span class="badge badge-danger">Fever</span>' : 'Body Temperature';
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> °C`;
+          notesVal = item.val >= 38.0 ? '<span class="badge badge-danger">Outside example range</span>' : 'Body Temperature';
         } else if (item.type === 'pefr') {
-          readingVal = `<strong>${item.val}</strong> L/min`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> L/min`;
           notesVal = 'Peak Flow';
         } else if (item.type === 'hydration') {
-          readingVal = `<strong>${item.val}</strong> ml`;
-          notesVal = `Activity: ${item.activity}`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> ml`;
+          notesVal = `Activity: ${escapeHTML(item.activity)}`;
         } else if (item.type === 'glucose') {
-          readingVal = `<strong>${item.val}</strong> mmol/L`;
-          notesVal = `Context: ${item.context}`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> mmol/L`;
+          notesVal = `Context: ${escapeHTML(item.context)}`;
         } else if (item.type === 'weight') {
-          readingVal = `<strong>${item.val}</strong> kg`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> kg`;
           notesVal = 'Body Weight';
         } else if (item.type === 'sleep') {
-          readingVal = `<strong>${item.val}</strong> hrs`;
-          notesVal = `Quality: ${item.quality}`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> hrs`;
+          notesVal = `Quality: ${escapeHTML(item.quality)}`;
         } else if (item.type === 'activity') {
-          readingVal = `<strong>${item.steps.toLocaleString()}</strong> steps`;
-          notesVal = `Active Mins: ${item.activeMins}`;
+          readingVal = `<strong>${escapeHTML((item.steps || 0).toLocaleString())}</strong> steps`;
+          notesVal = `Active Mins: ${escapeHTML(item.activeMins)}`;
         } else if (item.type === 'smoking') {
-          readingVal = `<strong>${item.status}</strong>`;
-          notesVal = `Daily Qty: ${item.qty}`;
+          readingVal = `<strong>${escapeHTML(item.status)}</strong>`;
+          notesVal = `Daily Qty: ${escapeHTML(item.qty)}`;
         } else if (item.type === 'alcohol') {
-          readingVal = `<strong>${item.val}</strong> Units`;
-          notesVal = `Notes: ${item.beverage}`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> Units`;
+          notesVal = `Notes: ${escapeHTML(item.beverage)}`;
         } else if (item.type === 'diet') {
-          readingVal = `<strong>${item.val}</strong> kcal`;
-          notesVal = `Meal: ${item.notes}`;
+          readingVal = `<strong>${escapeHTML(item.val)}</strong> kcal`;
+          notesVal = `Meal: ${escapeHTML(item.notes)}`;
         }
 
         tr.innerHTML = `
@@ -1252,90 +1324,293 @@
     }
 
     // Export Actions
-    function downloadPDF() {
-      const element = document.getElementById('report-area');
-      const opt = {
-        margin: 0.3,
-        filename: `MyHealthBridge_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    function safeFilename(value) {
+      return String(value || 'MyHealthBridge').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function getReportTitle() {
+      const modeNames = {
+        bp:'Blood Pressure', pulse:'Heart Rate', temp:'Body Temperature', pefr:'Peak Flow',
+        hydration:'Hydration', glucose:'Blood Glucose', weight:'Weight', sleep:'Sleep',
+        activity:'Physical Activity', smoking:'Smoking Status', alcohol:'Alcohol Intake', diet:'Diet & Calories'
       };
-      html2pdf().set(opt).from(element).save();
+      return modeNames[currentMode] || currentMode;
+    }
+
+    function getRecordText(r) {
+      const dt = new Date(r.timestamp).toLocaleString([], { dateStyle:'medium', timeStyle:'short' });
+      if (r.type === 'bp') return `${dt} — Blood Pressure: ${r.sys}/${r.dia} mmHg`;
+      if (r.type === 'pulse') return `${dt} — Heart Rate: ${r.val} bpm`;
+      if (r.type === 'temp') return `${dt} — Temperature: ${r.val} °C`;
+      if (r.type === 'pefr') return `${dt} — Peak Flow: ${r.val} L/min`;
+      if (r.type === 'hydration') return `${dt} — Fluid: ${r.val} ml (${r.activity || 'Unspecified activity'})`;
+      if (r.type === 'glucose') return `${dt} — Glucose: ${r.val} mmol/L (${r.context || 'Unspecified'})`;
+      if (r.type === 'weight') return `${dt} — Weight: ${r.val} kg`;
+      if (r.type === 'sleep') return `${dt} — Sleep: ${r.val} hrs (${r.quality || 'Unspecified'})`;
+      if (r.type === 'activity') return `${dt} — Steps: ${(r.steps || 0).toLocaleString()}, Active minutes: ${r.activeMins || 0}`;
+      if (r.type === 'smoking') return `${dt} — Smoking status: ${r.status || 'Unspecified'}, Daily quantity: ${r.qty || 0}`;
+      if (r.type === 'alcohol') return `${dt} — Alcohol: ${r.val} units (${r.beverage || 'Unspecified'})`;
+      if (r.type === 'diet') return `${dt} — Calories: ${r.val || 0} kcal (${r.notes || 'No notes'})`;
+      return `${dt} — ${r.type}`;
+    }
+
+    function getReportLines() {
+      const list = getFilteredReadings();
+      const lines = [
+        'MyHealthBridge — Personal Health Summary',
+        `Category: ${getReportTitle()}`,
+        `Filter: ${activeFilter === 'all' ? 'All recorded entries' : activeFilter === '7d' ? 'Last 7 days' : 'Last 30 days'}`,
+        `Generated: ${new Date().toLocaleString()}`,
+        `Name: ${patientDetails.name || 'Not provided'}`,
+        `Date of birth: ${patientDetails.dob || 'Not provided'}`,
+        `NHS Number: ${patientDetails.nhs || 'Not provided'}`,
+        `Entries: ${list.length}`,
+        '',
+        'Recorded metrics'
+      ];
+      list.forEach(r => lines.push(getRecordText(r)));
+      lines.push('', 'DEMO ONLY — MyHealthBridge is a non-clinical prototype. It does not provide diagnosis or medical advice. Do not use this demo with real patient data.');
+      return lines;
+    }
+
+    // Reliable PDF generation: build the PDF directly with jsPDF instead of rasterising
+    // the entire page. This avoids blank pages caused by html2canvas/Chart.js/CSS capture.
+    async function downloadPDF() {
+      const btn = document.getElementById('pdf-btn');
+      const list = getFilteredReadings();
+      if (list.length === 0) { alert('No data available to export for the selected category/filter.'); return; }
+
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('PDF export library could not be loaded. Check your internet connection and try again.');
+        return;
+      }
+
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.innerHTML = '⏳ Preparing PDF…';
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+        const margin = 16;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const contentWidth = pageWidth - margin * 2;
+        let y = 18;
+
+        const addWrapped = (text, x, startY, maxWidth, size=10, lineHeight=5) => {
+          doc.setFontSize(size);
+          const lines = doc.splitTextToSize(String(text), maxWidth);
+          doc.text(lines, x, startY);
+          return startY + lines.length * lineHeight;
+        };
+
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(18);
+        doc.text('MyHealthBridge', margin, y);
+        y += 7;
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(10);
+        doc.text('Personal Health Summary — DEMO', margin, y);
+        y += 8;
+
+        doc.setDrawColor(13,148,136);
+        doc.setLineWidth(0.8);
+        doc.line(margin, y, pageWidth-margin, y);
+        y += 8;
+
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(12);
+        doc.text(getReportTitle(), margin, y);
+        y += 6;
+
+        doc.setFont('helvetica','normal');
+        y = addWrapped(`Filter: ${activeFilter === 'all' ? 'All recorded entries' : activeFilter === '7d' ? 'Last 7 days' : 'Last 30 days'} | Generated: ${new Date().toLocaleString()}`, margin, y, contentWidth, 9, 4.5);
+        y += 2;
+        y = addWrapped(`Patient: ${patientDetails.name || 'Not provided'} | DOB: ${patientDetails.dob || 'Not provided'} | NHS Number: ${patientDetails.nhs || 'Not provided'}`, margin, y, contentWidth, 9, 4.5);
+        y += 5;
+
+        // Summary block
+        doc.setFillColor(240,253,250);
+        doc.roundedRect(margin, y, contentWidth, 16, 2, 2, 'F');
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(11);
+        doc.text(`Entries in report: ${list.length}`, margin+5, y+7);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(8.5);
+        doc.text('Data is generated from browser-local demo storage.', margin+5, y+12);
+        y += 23;
+
+        // Optional chart snapshot, if available
+        if (chartInstance) {
+          try {
+            const chartCanvas = document.getElementById('metricChart');
+            if (chartCanvas && chartCanvas.width > 0 && chartCanvas.height > 0) {
+              const img = chartCanvas.toDataURL('image/png', 1.0);
+              const ratio = chartCanvas.width / chartCanvas.height;
+              let imgW = Math.min(contentWidth, 175);
+              let imgH = imgW / ratio;
+              if (y + imgH + 10 > pageHeight - 22) { doc.addPage(); y = 18; }
+              doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.text('Trend', margin, y); y += 4;
+              doc.addImage(img, 'PNG', margin, y, imgW, imgH);
+              y += imgH + 8;
+            }
+          } catch (chartError) {
+            console.warn('Chart snapshot skipped:', chartError);
+          }
+        }
+
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(10);
+        doc.text('Recorded metrics', margin, y);
+        y += 6;
+
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(8.5);
+        list.forEach((r, index) => {
+          const line = `${index + 1}. ${getRecordText(r)}`;
+          const wrapped = doc.splitTextToSize(line, contentWidth);
+          if (y + wrapped.length * 4.5 > pageHeight - 20) {
+            doc.addPage();
+            y = 18;
+            doc.setFont('helvetica','bold');
+            doc.setFontSize(9);
+            doc.text('MyHealthBridge — continued', margin, y);
+            y += 7;
+            doc.setFont('helvetica','normal');
+            doc.setFontSize(8.5);
+          }
+          doc.text(wrapped, margin, y);
+          y += wrapped.length * 4.5 + 1.5;
+        });
+
+        if (y + 20 > pageHeight - 15) { doc.addPage(); y = 18; }
+        y += 4;
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(8);
+        doc.text('DEMO ONLY', margin, y);
+        y += 4;
+        doc.setFont('helvetica','normal');
+        y = addWrapped('MyHealthBridge is a non-clinical tracking prototype. It does not provide diagnosis or medical advice and should not be used for clinical decision-making. This demo is designed for demonstration purposes and stores data locally in the browser.', margin, y, contentWidth, 7.5, 3.5);
+
+        const pages = doc.getNumberOfPages();
+        for (let page=1; page<=pages; page++) {
+          doc.setPage(page);
+          doc.setFontSize(7);
+          doc.setTextColor(100,116,139);
+          doc.text(`MyHealthBridge demo • Page ${page} of ${pages}`, margin, pageHeight-8);
+          doc.setTextColor(15,23,42);
+        }
+
+        doc.save(`MyHealthBridge_${safeFilename(getReportTitle())}_${new Date().toISOString().slice(0,10)}.pdf`);
+        setSaveStatus('PDF created successfully');
+      } catch (error) {
+        console.error(error);
+        alert('The PDF could not be created. Your data has not been changed. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    }
+
+    function emailMetrics() {
+      const list = getFilteredReadings();
+      if (list.length === 0) { alert('No data available to email for the selected category/filter.'); return; }
+
+      const subject = `MyHealthBridge ${getReportTitle()} metrics`;
+      const body = getReportLines().join('\n');
+      const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+      setSaveStatus('Email draft opened');
     }
 
     function exportActiveCSV() {
       const list = getFilteredReadings();
       if (list.length === 0) { alert('No data to export.'); return; }
 
-      let csv = 'ID,Date,Type,Data\n';
-      list.forEach(r => {
-        csv += `"${r.id}","${r.timestamp}","${r.type}","${JSON.stringify(r).replace(/"/g, '""')}"\n`;
-      });
-      triggerDownload(csv, `MHB_${currentMode}_Export.csv`);
+      const rows = [['ID','Date','Type','Data']];
+      list.forEach(r => rows.push([r.id, r.timestamp, r.type, JSON.stringify(r)]));
+      const csv = rows.map(row => row.map(csvEscape).join(',')).join('\r\n');
+      triggerDownload('\uFEFF' + csv, `MHB_${safeFilename(getReportTitle())}_Export.csv`, 'text/csv;charset=utf-8;');
+      setSaveStatus('CSV export created');
     }
 
     function exportAllCSV() {
       if (readings.length === 0) { alert('No data to export.'); return; }
 
-      let csv = 'ID,Date,Type,Data\n';
-      readings.forEach(r => {
-        csv += `"${r.id}","${r.timestamp}","${r.type}","${JSON.stringify(r).replace(/"/g, '""')}"\n`;
-      });
-      triggerDownload(csv, `MHB_All_Data_Export.csv`);
+      const rows = [['ID','Date','Type','Data']];
+      readings.forEach(r => rows.push([r.id, r.timestamp, r.type, JSON.stringify(r)]));
+      const csv = rows.map(row => row.map(csvEscape).join(',')).join('\r\n');
+      triggerDownload('\uFEFF' + csv, 'MHB_All_Data_Export.csv', 'text/csv;charset=utf-8;');
+      setSaveStatus('Full CSV export created');
     }
 
-    function triggerDownload(content, filename) {
-      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    function csvEscape(value) {
+      return `"${String(value ?? '').replace(/"/g, '""')}"`;
+    }
+
+    function triggerDownload(content, filename, mime='text/plain;charset=utf-8;') {
+      const blob = new Blob([content], { type:mime });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
+      link.href = url;
       link.download = filename;
+      document.body.appendChild(link);
       link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
-    function copyPlainText() {
+    async function copyPlainText() {
       const list = getFilteredReadings();
       if (list.length === 0) { alert('No data available to copy.'); return; }
-
-      let text = `MyHealthBridge Summary Report\n`;
-      text += `Patient: ${patientDetails.name || 'N/A'} | DOB: ${patientDetails.dob || 'N/A'} | NHS: ${patientDetails.nhs || 'N/A'}\n`;
-      text += `Category: ${currentMode.toUpperCase()}\n----------------------------------------\n`;
-
-      list.forEach(r => {
-        const dt = new Date(r.timestamp).toLocaleString();
-        if (r.type === 'bp') text += `${dt} - BP: ${r.sys}/${r.dia} mmHg\n`;
-        else if (r.type === 'pulse') text += `${dt} - Heart Rate: ${r.val} bpm\n`;
-        else if (r.type === 'temp') text += `${dt} - Temp: ${r.val} °C\n`;
-        else if (r.type === 'pefr') text += `${dt} - Peak Flow: ${r.val} L/min\n`;
-        else if (r.type === 'hydration') text += `${dt} - Fluid: ${r.val} ml (${r.activity})\n`;
-        else if (r.type === 'glucose') text += `${dt} - Glucose: ${r.val} mmol/L (${r.context})\n`;
-        else if (r.type === 'weight') text += `${dt} - Weight: ${r.val} kg\n`;
-        else if (r.type === 'sleep') text += `${dt} - Sleep: ${r.val} hrs (${r.quality})\n`;
-        else if (r.type === 'activity') text += `${dt} - Steps: ${r.steps}, Active Mins: ${r.activeMins}\n`;
-        else if (r.type === 'smoking') text += `${dt} - Status: ${r.status}, Daily Qty: ${r.qty}\n`;
-        else if (r.type === 'alcohol') text += `${dt} - Alcohol: ${r.val} Units (${r.beverage})\n`;
-        else if (r.type === 'diet') text += `${dt} - Calories: ${r.val} kcal (${r.notes})\n`;
-      });
-
-      navigator.clipboard.writeText(text).then(() => {
-        alert('Report text copied to clipboard successfully!');
-      });
+      const text = getReportLines().join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+        setSaveStatus('Report copied to clipboard');
+        alert('Report text copied to clipboard successfully.');
+      } catch (error) {
+        // Fallback for browsers that block Clipboard API in local files.
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+        setSaveStatus('Report copied to clipboard');
+        alert('Report text copied to clipboard successfully.');
+      }
     }
 
     function clearAllData() {
-      if (confirm('Are you sure you want to clear ALL saved records and patient details? This cannot be undone.')) {
-        localStorage.clear();
-        readings = [];
-        patientDetails = { name: '', dob: '', nhs: '' };
-        document.getElementById('patient-name').value = '';
-        document.getElementById('patient-dob').value = '';
-        document.getElementById('patient-nhs').value = '';
-        renderApp();
-      }
+      if (!confirm('Clear all MyHealthBridge records and patient details? This cannot be undone.')) return;
+      localStorage.removeItem('mhb_readings');
+      localStorage.removeItem('mhb_patient');
+      readings = [];
+      patientDetails = { name:'', dob:'', nhs:'' };
+      document.getElementById('patient-name').value = '';
+      document.getElementById('patient-dob').value = '';
+      document.getElementById('patient-nhs').value = '';
+      setSaveStatus('All MyHealthBridge data cleared');
+      renderApp();
+    }
+
+    function setSaveStatus(message) {
+      const el = document.getElementById('save-status');
+      if (el) el.textContent = message;
+      updateRecordCount();
+    }
+
+    function updateRecordCount() {
+      const el = document.getElementById('record-count');
+      if (el) el.textContent = `${readings.length.toLocaleString()} reading${readings.length === 1 ? '' : 's'} stored locally`;
     }
 
     // Initialize
     selectTrackerMode('bp');
+    updateRecordCount();
   </script>
 </body>
 </html>
